@@ -1,75 +1,118 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
+import json
+import os
 
-# Function to update the start year label
-def update_start_year_label(value):
-    start_year_label.config(text=f"Start Year: {int(float(value))}")
+# Define paths for user file
+users_file = 'users.json'
 
-# Function to update the end year label
-def update_end_year_label(value):
-    end_year_label.config(text=f"End Year: {int(float(value))}")
+# Function to load users from JSON
+def load_users():
+    if not os.path.exists(users_file):
+        with open(users_file, 'w') as file:
+            json.dump({}, file)
+    with open(users_file, 'r') as file:
+        return json.load(file)
 
-# Function to simulate sending data to an API
+# Function to save users to JSON
+def save_users(users):
+    with open(users_file, 'w') as file:
+        json.dump(users, file, indent=4)
+
+# Function to register a new user
+def register():
+    username = new_username_entry.get()
+    password = new_password_entry.get()
+    users = load_users()
+
+    if username in users:
+        messagebox.showerror("Error", "User already exists.")
+        return
+
+    users[username] = password
+    save_users(users)
+    messagebox.showinfo("Success", "User registered successfully.")
+    show_login_frame()
+
+# Function to login a user
+def login():
+    username = username_entry.get()
+    password = password_entry.get()
+    users = load_users()
+
+    if users.get(username) == password:
+        messagebox.showinfo("Success", "Logged in successfully.")
+        show_recommendation_frame()
+    else:
+        messagebox.showerror("Error", "Invalid username or password.")
+
+# Function to show login frame
+def show_login_frame():
+    registration_frame.pack_forget()
+    recommendation_frame.pack_forget()
+    login_frame.pack()
+
+# Function to show register frame
+def show_register_frame():
+    login_frame.pack_forget()
+    recommendation_frame.pack_forget()
+    registration_frame.pack()
+
+# Function to show recommendation frame
+def show_recommendation_frame():
+    login_frame.pack_forget()
+    registration_frame.pack_forget()
+    recommendation_frame.pack()
+
+# Function to submit recommendation request
 def submit():
     movie_name = name_entry.get()
-    selected_genres = [genre for genre, var in genres.items() if var.get() == 1]
-    start_year = int(start_year_scale.get())
-    end_year = int(end_year_scale.get())
-    rating_preference = rating_var.get()
-    print(f"Movie Name: {movie_name}, Genres: {selected_genres}, Year Range: {start_year}-{end_year}, Rating: {rating_preference}")
-    # Here, replace the print statement with your API call logic for movie recommendations
+    # ... your existing submit logic ...
+    print(f"Movie Name: {movie_name}")
+    # ... your existing submit logic ...
 
-# Create the main window
 root = tk.Tk()
 root.title("Movie Recommendation App")
 root.geometry("600x400")
 
-# Create and grid the layout frames
-main_frame = ttk.Frame(root, padding="10 10 10 10")
-main_frame.grid(column=0, row=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-root.columnconfigure(0, weight=1)
-root.rowconfigure(0, weight=1)
+# Frames for each section of the application
+login_frame = ttk.Frame(root, padding="10 10 10 10")
+registration_frame = ttk.Frame(root, padding="10 10 10 10")
+recommendation_frame = ttk.Frame(root, padding="10 10 10 10")
 
-# Movie Name Entry
-ttk.Label(main_frame, text="Movie Name (optional):").grid(column=0, row=0, sticky=tk.W)
-name_entry = ttk.Entry(main_frame, width=30)
-name_entry.grid(column=1, row=0, sticky=tk.W)
+# Building the login frame
+ttk.Label(login_frame, text="Username:").pack()
+username_entry = ttk.Entry(login_frame)
+username_entry.pack()
+ttk.Label(login_frame, text="Password:").pack()
+password_entry = ttk.Entry(login_frame, show='*')
+password_entry.pack()
+login_button = ttk.Button(login_frame, text="Login", command=login)
+login_button.pack()
+register_button = ttk.Button(login_frame, text="Register", command=show_register_frame)
+register_button.pack()
 
-# Genre Selection
-ttk.Label(main_frame, text="Preferred Genres:").grid(column=0, row=1, sticky=tk.W, pady=5)
-genres_frame = ttk.Frame(main_frame)
-genres_frame.grid(column=1, row=1, sticky=tk.W)
-genres = {"Action": tk.IntVar(), "Comedy": tk.IntVar(), "Drama": tk.IntVar(), "Fantasy": tk.IntVar(), "Horror": tk.IntVar()}
-for i, (genre, var) in enumerate(genres.items()):
-    ttk.Checkbutton(genres_frame, text=genre, variable=var).grid(column=i, row=1, sticky=tk.W)
+# Building the registration frame
+ttk.Label(registration_frame, text="Choose a Username:").pack()
+new_username_entry = ttk.Entry(registration_frame)
+new_username_entry.pack()
+ttk.Label(registration_frame, text="Choose a Password:").pack()
+new_password_entry = ttk.Entry(registration_frame, show='*')
+new_password_entry.pack()
+register_new_button = ttk.Button(registration_frame, text="Register", command=register)
+register_new_button.pack()
+back_to_login_button = ttk.Button(registration_frame, text="Back to Login", command=show_login_frame)
+back_to_login_button.pack()
 
-# Start Year Slider and Label
-start_year_label = ttk.Label(main_frame, text="Start Year:")
-start_year_label.grid(column=0, row=2, sticky=tk.W, pady=5)
-start_year_scale = ttk.Scale(main_frame, from_=1900, to=2024, orient=tk.HORIZONTAL, length=200, command=update_start_year_label)
-start_year_scale.set(1900)  # set to default/start value
-start_year_scale.grid(column=1, row=2, sticky=tk.W)
+# Building the recommendation frame
+ttk.Label(recommendation_frame, text="Movie Name:").pack()
+name_entry = ttk.Entry(recommendation_frame)
+name_entry.pack()
+submit_button = ttk.Button(recommendation_frame, text="Submit", command=submit)
+submit_button.pack()
 
-# End Year Slider and Label
-end_year_label = ttk.Label(main_frame, text="End Year:")
-end_year_label.grid(column=0, row=3, sticky=tk.W, pady=5)
-end_year_scale = ttk.Scale(main_frame, from_=1900, to=2024, orient=tk.HORIZONTAL, length=200, command=update_end_year_label)
-end_year_scale.set(2024)  # set to default/end value
-end_year_scale.grid(column=1, row=3, sticky=tk.W)
+# Pack the initial login frame
+show_login_frame()
 
-# Rating Preference Dropdown
-ttk.Label(main_frame, text="Rating Preference:").grid(column=0, row=4, sticky=tk.W, pady=5)
-rating_var = tk.StringVar()
-rating_dropdown = ttk.Combobox(main_frame, textvariable=rating_var, state="readonly")
-rating_dropdown['values'] = ("Any", "G", "PG", "PG-13", "R", "NC-17")
-rating_dropdown.current(0)
-rating_dropdown.grid(column=1, row=4, sticky=tk.W)
-
-# Submit Button
-submit_button = ttk.Button(main_frame, text="Get Recommendations", command=submit)
-submit_button.grid(column=1, row=5, sticky=tk.W, pady=10)
-
-# Initial call to update labels
-update_start_year_label(start_year_scale.get())
-update_end_year_label(end_year_scale.get())
 root.mainloop()
