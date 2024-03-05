@@ -1,68 +1,79 @@
-from flask import Flask, request, jsonify
 import requests
-import json
+import argparse
 
-app = Flask(__name__)
+API_KEY= "bf2a409e2a9c66f245a0b3d223179222"
+BASE_URL = 'https://api.themoviedb.org/3'
+user_input = {}
 
-# Replace with your actual TMDB API key
-TMDB_API_KEY = '8869a76543d94698b7af7935fc80defa'
-PREFERENCES_FILE = 'user_preferences.json'
-
-def save_user_preferences(user_id, data):
-    """Save user preferences to a JSON file."""
-    try:
-        with open(PREFERENCES_FILE, 'r+') as file:
-            preferences = json.load(file)
-            preferences[user_id] = data
-            file.seek(0)
-            json.dump(preferences, file, indent=4)
-    except FileNotFoundError:
-        with open(PREFERENCES_FILE, 'w') as file:
-            json.dump({user_id: data}, file, indent=4)
-    except json.JSONDecodeError:
-        with open(PREFERENCES_FILE, 'w') as file:
-            json.dump({user_id: data}, file, indent=4)
-
-def load_user_preferences(user_id):
-    """Load user preferences from a JSON file."""
-    try:
-        with open(PREFERENCES_FILE, 'r') as file:
-            preferences = json.load(file)
-            return preferences.get(user_id, {})
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def fetch_movies_from_tmdb(genre_id):
-    """Fetch movies from TMDB based on the genre ID."""
-    response = requests.get(f"https://api.themoviedb.org/3/discover/movie",
-                            params={
-                                'api_key': TMDB_API_KEY,
-                                'with_genres': genre_id,
-                                'sort_by': 'popularity.desc'
-                            })
-    movies = response.json().get('results', [])
-    return movies
-
-@app.route('/submit_preferences', methods=['POST'])
-def submit_preferences():
-    """Endpoint to submit user movie preferences."""
-    user_data = request.json
-    user_id = user_data['user_id']
-    save_user_preferences(user_id, user_data)
-    return jsonify({"message": "Preferences saved successfully"}), 200
-
-@app.route('/get_recommendation', methods=['GET'])
-def get_recommendation():
-    """Endpoint to get a movie recommendation based on user preferences."""
-    user_id = request.args.get('user_id')
-    preferences = load_user_preferences(user_id)
-    genre_id = preferences.get('genre_id', '')
-    movies = fetch_movies_from_tmdb(genre_id)
-    if movies:
-        # Return the most popular movie for simplicity
-        return jsonify(movies[0]), 200
+def get_genre_list() -> dict:
+    url = BASE_URL + '/genre/movie/list'
+    params = {
+        'api_key': API_KEY,
+        'language': 'en-US' 
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        return data
     else:
-        return jsonify({"message": "No movies found for the selected preferences"}), 404
+        print("Failed to fetch data:", response.status_code)
+
+
+def main():
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--api_key', help='API key for the movie database')
+    # args = parser.parse_args()
+    # API_KEY = args.api_key
+
+    # Get the list of genres
+    genre_list = get_genre_list()
+
+    user_input = {
+    "language": "en-US",  # Language of the results
+    "region": "",  # ISO 3166-1 code to filter release dates. Must be uppercase.
+    "sort_by": "popularity.desc",  # Criteria for sorting the results
+    "certification_country": "",  # Country code for filtering by certification
+    "certification": "",  # Certification filter
+    "certification.lte": "",  # Movies with certification lower than or equal to the specified value
+    "certification.gte": "",  # Movies with certification greater than or equal to the specified value
+    "include_adult": False,  # Include adult (pornographic) content in the results
+    "include_video": False,  # Include video results
+    "page": 1,  # Page number for pagination
+    "primary_release_year": "",  # Filter by primary release year
+    "primary_release_date.gte": "",  # Movies with primary release date greater than or equal to the specified date
+    "primary_release_date.lte": "",  # Movies with primary release date less than or equal to the specified date
+    "release_date.gte": "",  # Movies with release date greater than or equal to the specified date
+    "release_date.lte": "",  # Movies with release date less than or equal to the specified date
+    "vote_count.gte": "",  # Movies with vote count greater than or equal to the specified number
+    "vote_count.lte": "",  # Movies with vote count less than or equal to the specified number
+    "vote_average.gte": "",  # Movies with vote average greater than or equal to the specified number
+    "vote_average.lte": "",  # Movies with vote average less than or equal to the specified number
+    "with_cast": "",  # Filter by one or more cast member IDs
+    "with_crew": "",  # Filter by one or more crew member IDs
+    "with_people": ""  # Filter by one or more people IDs associated with the movie
+    }
+
+    url = "https://api.themoviedb.org/3/discover/movie"
+
+    # Adding the API key to the dictionary
+    user_input['api_key'] = API_KEY
+
+    # Make the GET request
+    response = requests.get(url, params=user_input)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        data = response.json()        
+    else:
+        print("Failed to fetch data:", response.status_code)
+    # print the movie titles    
+    for movie in data['results']:
+        print(movie['title'])
+
 
 if __name__ == '__main__':
-    app.rgitun(debug=True)
+    main()
+
+
+
+
