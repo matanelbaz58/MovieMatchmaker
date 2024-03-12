@@ -1,6 +1,6 @@
 
 import requests
-
+import utils
 
 class utils:
     API_KEY= "bf2a409e2a9c66f245a0b3d223179222"
@@ -73,5 +73,49 @@ class utils:
 
         # Make the GET request
         data = self.get_response(url, params=user_input)
-        print(data)
+        return data['results'] # =dict keys ['adult', 'backdrop_path', 'genre_ids', 'id', 'original_language', 'original_title', 'overview', 'popularity', 'poster_path', 'release_date', 'title', 'video', 'vote_average', 'vote_count']
     
+
+    def get_genre_list(self) -> dict:
+        url = self.BASE_URL + '/genre/movie/list'
+        params = {
+            'api_key': self.API_KEY,
+            'language': 'en-US' 
+        }
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            genre_dict = {genre['name']: genre['id'] for genre in data['genres']}
+            return genre_dict
+        else:
+            print("Failed to fetch data:", response.status_code)
+
+    def get_language_list(self) -> dict:
+
+        url = "https://api.themoviedb.org/3/configuration/languages"
+
+        
+        headers = {
+            "accept": "application/json",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZjJhNDA5ZTJhOWM2NmYyNDVhMGIzZDIyMzE3OTIyMiIsInN1YiI6IjY1ZGNmMzUyOGMwYTQ4MDEzMTFkYTI0OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.1_XHPeZXtKSrozDmPcZKEaIbz4W5CpfloqD0l0LDLtY"
+        }
+        response = requests.get(url ,headers=headers)
+
+        print(response.text)
+    def get_movie_images(self, movie_id: int) -> dict:
+        url = f"{self.BASE_URL}/movie/{movie_id}/images"
+        params = {
+            'api_key': self.API_KEY
+        }
+        response = requests.get(url, params=params)
+        if response.status_code != 200:
+            print("Failed to fetch data:", response.status_code)
+            exit()
+       
+        data = response.json()
+        return data.keys()
+        
+
+ut = utils()
+data = ut.make_API_call(utils.user_input)
+print(ut.get_movie_images(data[0]['id']))
