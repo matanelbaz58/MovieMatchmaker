@@ -1,11 +1,10 @@
 
 import requests
-import utils
 
-class utils:
-    API_KEY= "bf2a409e2a9c66f245a0b3d223179222"
-    BASE_URL = 'https://api.themoviedb.org/3'
-    user_input = {
+API_KEY= "bf2a409e2a9c66f245a0b3d223179222"
+BASE_URL = 'https://api.themoviedb.org/3'
+    
+DEFAULT_USER_INPUT = { "api_key": API_KEY,
     "language": "",
     "region": "",
     "sort_by": "popularity.desc",
@@ -44,35 +43,31 @@ class utils:
     "without_keywords": "",
     "without_watch_providers": "",
     "year": ""
-    }
+}
 
-    def get_response(self, url, params):
-        # Make the GET request
-        response = requests.get(url, params=params)
 
-        # Check if the request was successful
-        if response.status_code == 200:
-            return response.json()        
-        else:
-            print("Failed to fetch data:", response.status_code)
-            return None
+class TMDB_API_caller:
+    
+    #constructor
+    def __init__(self ):
+        self.user_input = DEFAULT_USER_INPUT
+        self.API_KEY = API_KEY
+        self.BASE_URL = BASE_URL
+       
+
 
     def make_API_call(self, user_input: dict) -> None:
 
-        # parser = argparse.ArgumentParser()
-        # parser.add_argument('--api_key', help='API key for the movie database')
-        # args = parser.parse_args()
-        # API_KEY = args.api_key
-    
-    
-
-        url = f"{self.BASE_URL}/discover/movie"
-
-        # Adding the API key to the dictionary
-        user_input['api_key'] = self.API_KEY
-
+        url = f"{self.BASE_URL}/discover/movie"        
         # Make the GET request
-        data = self.get_response(url, params=user_input)
+        response = requests.get(url, params=user_input)
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            data = response.json()        
+        else:
+            print("Failed to fetch data:", response.status_code)
+            return None
         return data['results'] # =dict keys ['adult', 'backdrop_path', 'genre_ids', 'id', 'original_language', 'original_title', 'overview', 'popularity', 'poster_path', 'release_date', 'title', 'video', 'vote_average', 'vote_count']
     
 
@@ -89,12 +84,10 @@ class utils:
             return genre_dict
         else:
             print("Failed to fetch data:", response.status_code)
+            
 
     def get_language_list(self) -> dict:
-
         url = "https://api.themoviedb.org/3/configuration/languages"
-
-        
         headers = {
             "accept": "application/json",
             "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZjJhNDA5ZTJhOWM2NmYyNDVhMGIzZDIyMzE3OTIyMiIsInN1YiI6IjY1ZGNmMzUyOGMwYTQ4MDEzMTFkYTI0OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.1_XHPeZXtKSrozDmPcZKEaIbz4W5CpfloqD0l0LDLtY"
@@ -102,6 +95,8 @@ class utils:
         response = requests.get(url ,headers=headers)
 
         print(response.text)
+
+
     def get_movie_images(self, movie_id: int) -> dict:
         url = f"{self.BASE_URL}/movie/{movie_id}/images"
         params = {
@@ -116,6 +111,11 @@ class utils:
         return data.keys()
         
 
-ut = utils()
-data = ut.make_API_call(utils.user_input)
-print(ut.get_movie_images(data[0]['id']))
+#test the class
+if __name__ == "__main__":
+    u = TMDB_API_caller()
+    print(u.make_API_call(u.user_input))
+    #print(u.get_genre_list())
+    #print(u.get_language_list())
+    #print(u.get_movie_images(550))
+    print(u.get_movie_images(550))
