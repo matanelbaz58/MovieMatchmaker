@@ -133,7 +133,9 @@ class User:
         Removes a user from MongoDB.
 
         Returns:
-        bool: True if the user was removed, False if the user does not exist or failed to remove.
+        bool:
+        True if the user was removed,
+        False if the user does not exist or failed to remove.
         """
         db = self.client['user_search_history']
         collection = db['user_data']
