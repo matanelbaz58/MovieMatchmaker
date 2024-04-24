@@ -49,7 +49,7 @@ class User:
 
         Returns:
         0 : if the user does not exist
-        1 : if the user exists and the password is correct, 
+        1 : if the user exists and the password is correct 
         2 : if the user exists but the password is incorrect
         """
         db = self.client['user_search_history']
@@ -104,11 +104,28 @@ class User:
 
     def make_api_call(self) -> list:
         """
-        Makes an API call to get movie recommendations based on the user's input and preferences.
+        Fetch movie recommendations from API based on user input + preferences.
 
+        
         Returns:
-        list: A list of dictionaries containing movie recommendations.
+        list : A list of dictionaries, each dictionary containing one movie recommendation.
+        
+        The important keys are:
+        'title' (movie name)
+        'backdrop_path' (path to image)
+        'overview' (a short description of the movie)
+        'genre_ids'
+        'id'
+        'original_language'
+        'popularity'
+        'poster_path' ( a cool backround for the moovie details)
+        'release_date'
+        
+
+        Returns None if the request fails.
         """
+        # TODO update user_preference befor storing history
+        self.store_preference_to_history()
         return api_caller.get_movie_recommendations(self.user_input, self.user_preference)
     
     def remove_user(self) -> bool:
@@ -144,4 +161,6 @@ def test_user():
     print('\n-----\nAll tests passed')
 
 if __name__ == "__main__":
-    test_user()
+    #test_user()
+    user = User('test_user4', 'password')
+    print(type(user.make_api_call()))
