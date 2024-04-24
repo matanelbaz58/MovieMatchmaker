@@ -34,13 +34,14 @@ class User:
     """
     A class to represent a user.
     """
-    # init user without user_name and password
-    def __init__(self):
-        self.user_name = None
-        self.user_password = None
+    # init user with user_name and password
+    def __init__(self, user_name: str = None, user_password: str = None):
+        self.user_name = user_name
+        self.user_password = user_password
         self.user_input = api_caller.DEFAULT_USER_INPUT
         self.user_preference = DEFAULT_USER_PREFERENCE # User preferences for movie acording to users history
         self.client = MongoClient(api_caller.MONGO_STR)
+
 
 
     def check_user(self):
@@ -145,7 +146,8 @@ def test_user():
     """
     Tests the User class.
     """
-    user = User('test_user6', 'password')
+    user = User(user_name='test_user44', user_password='p@ssword')
+    print(user.user_name, user.user_password)
     assert user.check_user() == 0
     assert user.add_user() is True
     assert user.check_user() == 1
@@ -158,9 +160,9 @@ def test_user():
     assert user.store_preference_to_history() is None
     assert user.get_preference_history() == user.user_preference
     assert user.remove_user() is True
-    print('\n-----\nAll tests passed')
+    print('\n--------\nAll tests passed\n--------\n\n')
 
 if __name__ == "__main__":
     test_user()
-    user = User('test_user4', 'password')
-    print(type(user.make_api_call()))
+    # user = User('test_user4', 'password')
+    # print(type(user.make_api_call()))
