@@ -34,15 +34,15 @@ class User:
     """
     A class to represent a user.
     """
-    
-    def __init__(self, user_name, user_password):
-
-        self.user_name = user_name
-        self.user_password = user_password    
+    # init user without user_name and password
+    def __init__(self):
+        self.user_name = None
+        self.user_password = None
         self.user_input = api_caller.DEFAULT_USER_INPUT
         self.user_preference = DEFAULT_USER_PREFERENCE # User preferences for movie acording to users history
         self.client = MongoClient(api_caller.MONGO_STR)
-        
+
+
     def check_user(self):
         """
         Checks if the user exists in MongoDB and if the password is correct.
@@ -121,7 +121,6 @@ class User:
         'poster_path' ( a cool backround for the moovie details)
         'release_date'
         
-
         Returns None if the request fails.
         """
         # TODO update user_preference befor storing history
@@ -132,8 +131,7 @@ class User:
         """
         Removes a user from MongoDB.
 
-        Returns:
-        bool:
+        Returns bool:
         True if the user was removed,
         False if the user does not exist or failed to remove.
         """
@@ -163,6 +161,6 @@ def test_user():
     print('\n-----\nAll tests passed')
 
 if __name__ == "__main__":
-    #test_user()
+    test_user()
     user = User('test_user4', 'password')
     print(type(user.make_api_call()))
