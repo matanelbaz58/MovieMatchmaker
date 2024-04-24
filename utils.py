@@ -1,19 +1,6 @@
 
-def get_genre_list() -> dict:
-    url = BASE_URL + '/genre/movie/list'
-    params = {
-        'api_key': API_KEY,
-        'language': 'en-US' 
-    }
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        data = response.json()
-        genre_dict = {genre['name']: genre['id'] for genre in data['genres']}
-        return genre_dict
-    else:
-        print("Failed to fetch data:", response.status_code)
 
-
+ABI = '[{"inputs":[],"name":"num","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"person","outputs":[{"internalType":"uint256","name":"num","type":"uint256"},{"internalType":"string","name":"name","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"retrive","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_num","type":"uint256"}],"name":"store","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stru","outputs":[{"internalType":"uint256","name":"num","type":"uint256"},{"internalType":"string","name":"name","type":"string"}],"stateMutability":"view","type":"function"}]'
 
 
 API_KEY= "bf2a409e2a9c66f245a0b3d223179222"

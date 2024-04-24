@@ -33,31 +33,10 @@ DEFAULT_USER_PREFERENCE = {
 class User:
     """
     A class to represent a user.
-
-    Attributes:
-    user_name (str): The user's name.
-    user_password (str): The user's password.
-    user_input (dict): The default user input for API calls.
-    user_preference (dict): The user's preferences.
-    client (MongoClient): The MongoDB client.
-
-    Methods:
-    check_user(): Checks if the user exists and if the password is correct.
-    add_user(): Adds a new user to MongoDB.
-    store_history(): Stores the user's search history in MongoDB.
-    get_history(): Retrieves the user's search history from MongoDB.
-    make_api_call(): Makes an API call to get movie recommendations.
-    remove_user(): Removes a user from MongoDB.
     """
     
     def __init__(self, user_name, user_password):
-        """
-        Constructs all the necessary attributes for the user object.
 
-        Parameters:
-        user_name (str): The user's name.
-        user_password (str): The user's password.
-        """
         self.user_name = user_name
         self.user_password = user_password    
         self.user_input = make_api_call.DEFAULT_USER_INPUT
@@ -69,7 +48,9 @@ class User:
         Checks if the user exists in MongoDB and if the password is correct.
 
         Returns:
-        int: 0 if the user does not exist, 1 if the user exists and the password is correct, 2 if the user exists but the password is incorrect.
+        0 : if the user does not exist
+        1 : if the user exists and the password is correct, 
+        2 : if the user exists but the password is incorrect
         """
         db = self.client['user_search_history']
         collection = db['user_data']
@@ -86,7 +67,8 @@ class User:
         Adds a new user to MongoDB.
 
         Returns:
-        bool: True if the user was added, False if the user already exists or failed to add.
+        True : if the user was added
+        False : if the user already exists or failed to add.
         """
         db = self.client['user_search_history']
         collection = db['user_data']
