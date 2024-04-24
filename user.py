@@ -1,5 +1,5 @@
 import json
-import make_api_call
+import api_caller
 
 from pymongo import MongoClient
 
@@ -39,9 +39,9 @@ class User:
 
         self.user_name = user_name
         self.user_password = user_password    
-        self.user_input = make_api_call.DEFAULT_USER_INPUT
-        self.user_preference = DEFAULT_USER_PREFERENCE
-        self.client = MongoClient(make_api_call.MONGO_STR)
+        self.user_input = api_caller.DEFAULT_USER_INPUT
+        self.user_preference = DEFAULT_USER_PREFERENCE # User preferences for movie acording to users history
+        self.client = MongoClient(api_caller.MONGO_STR)
         
     def check_user(self):
         """
@@ -79,21 +79,23 @@ class User:
         user = collection.find_one({'user_name': self.user_name})
         return user is not None
     
-    def store_history(self):
+    def store_preference_to_history(self):
         """
         Stores the user's search history in MongoDB.
         """
         db = self.client['user_search_history']
         collection = db['history_data']
+        # TODO update the user_preference acording to the user_input
         collection.replace_one({'user_name': self.user_name, 'password': self.user_password},
                                {'user_name': self.user_name, 'password': self.user_password, 'user_preference': self.user_preference}, upsert=True)
 
-    def get_history(self) -> dict:
+    def get_preference_history(self) -> dict:
         """
         Retrieves the user's search history from MongoDB.
 
         Returns:
         dict: The user's search history.
+        none: if the user does not exist in the database.
         """
         db = self.client['user_search_history']
         collection = db['history_data']
@@ -107,7 +109,7 @@ class User:
         Returns:
         list: A list of dictionaries containing movie recommendations.
         """
-        return make_api_call.get_movie_recommendations(self.user_input, self.user_preference)
+        return api_caller.get_movie_recommendations(self.user_input, self.user_preference)
     
     def remove_user(self) -> bool:
         """
@@ -126,7 +128,7 @@ def test_user():
     """
     Tests the User class.
     """
-    user = User('test_user4', 'password')
+    user = User('test_user6', 'password')
     assert user.check_user() == 0
     assert user.add_user() is True
     assert user.check_user() == 1
@@ -136,10 +138,10 @@ def test_user():
     assert user2.add_user() is False
 
     assert user.make_api_call() is not None
-    assert user.store_history() is None
-    assert user.get_history() == user.user_preference
+    assert user.store_preference_to_history() is None
+    assert user.get_preference_history() == user.user_preference
     assert user.remove_user() is True
-    print('All tests passed')
+    print('\n-----\nAll tests passed')
 
-# if __name__ == "__main__":
-#     test_user()
+if __name__ == "__main__":
+    test_user()

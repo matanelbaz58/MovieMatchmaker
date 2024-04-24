@@ -38,7 +38,7 @@ DEFAULT_USER_INPUT = { "api_key": API_KEY,
 
 
 
-def get_movie_recommendations(user_input: dict[str, str], user_preference: dict[str, int]) -> Optional[list[dict[str, str]]]:
+def get_movie_recommendations(user_input: dict[str, str], user_preference: dict) -> dict:
     """
     Fetch movie recommendations based on user input.
 
@@ -47,8 +47,18 @@ def get_movie_recommendations(user_input: dict[str, str], user_preference: dict[
     user_preference (dict): A dictionary containing user preferences.
 
     Returns:
-    list : A list of dictionaries containing movie recommendations, 
-    where each dictionary contains string keys and values. Returns None if the request fails.
+    list : A list of dictionaries containing movie recommendations, the important ones are: 
+    'backdrop_path' (path to imaage)
+    'genre_ids'
+    'id'
+    'original_language'
+    'overview' (a short description of the movie)
+    'popularity'
+    'poster_path'
+    'release_date'
+    'title'
+
+    .Returns None if the request fails.
     """
     url = f"{BASE_URL}/discover/movie"     
 
