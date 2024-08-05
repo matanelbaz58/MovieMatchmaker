@@ -1,6 +1,6 @@
 from web3 import Web3
 import json
-import utils
+import web_app.utils as utils
 # Connect to Sepolia testnet
 sepolia_url = 'https://sepolia.infura.io/v3/a32106b340fb4f1aa81105e66a70b2ff'
 w3 = Web3(Web3.HTTPProvider(sepolia_url))

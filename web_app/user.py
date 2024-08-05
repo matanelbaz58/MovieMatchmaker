@@ -1,5 +1,5 @@
 import json
-import api_caller
+import api_caller as api_caller
 
 from pymongo import MongoClient
 
