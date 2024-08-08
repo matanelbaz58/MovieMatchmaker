@@ -6,20 +6,15 @@ TMDB_URL = "https://api.themoviedb.org/3"
 TMDB_AUTH_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZjJhNDA5ZTJhOWM2NmYyNDVhMGIzZDIyMzE3OTIyMiIsInN1YiI6IjY1ZGNmMzUyOGMwYTQ4MDEzMTFkYTI0OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.1_XHPeZXtKSrozDmPcZKEaIbz4W5CpfloqD0l0LDLtY"
 
 
-class MongoDBHistoryManager:
-    pass
-
-class Web3HistoryManager:
-    pass
 
 class MongoDBClient:
     def __init__(self, isMongoDBClient: bool):
         self.user_name = None
         self.user_password = None
         self.wallet_address = None
-        self.search_history_manager = MongoDBClient if isMongoDBClient else Web3HistoryManager
+        #self.search_history_manager = MongoDBClient if isMongoDBClient else Web3HistoryManager
 
-    def login(self, user_name: str, user_password: str) -> bool:
+    def login(self, user_name: str, user_password: str) -> int:
         """
         Logs in the user.
 
@@ -28,25 +23,43 @@ class MongoDBClient:
             user_password (str): The user's password.
 
         Returns:
-            bool: True if the user was logged in successfully, False otherwise.
+            0 (int): if the user name does not exist.
+            1 (int): if the user was logged in successfully.
+            2 (int): if the password is incorrect.
         """
+        response = requests.post(f"{API_URL}/login_mongoDB", json={"user_name": user_name, "user_password": user_password})
+        if response.status_code == 400:
+            return 0
+        elif response.status_code == 401:
+            return 2
+        elif response.status_code == 200:
+            self.user_name = user_name
+            self.user_password = user_password
+            return 1
+
+
+    def register_user(self, user_name: str, user_password: str) -> dict:
+        """
+        Registers a new user in the database and logs them in.
         
-        pass
-    
-
-
-    def register(self, user_name: str, user_password: str) -> dict:
-        """
-        Registers a new user.
-
-        Args:
-            user_name (str): The user's name.
-            user_password (str): The user's password.
-
         Returns:
-            dict: A dictionary containing the status of the registration.
+            True : if the user was added successfully.
+            False : if the user name already exists or failed to add.
         """
-        pass
+        response = requests.post(f"{API_URL}/register_mongoDB", json={"user_name": user_name, "user_password": user_password})
+        self.login(user_name, user_password)
+        return response.json()['success']
+
+    def remove_user(self, user_name: str, user_password: str) -> dict:
+        """
+        Removes a user from the database.
+        
+        Returns:
+            True : if the user was removed successfully.
+            False : if the user name does not exist or failed to remove.
+        """
+        response = requests.post(f"{API_URL}/remove_user_from_mongoDB", json={"user_name": user_name, "user_password": user_password})
+        return response.json()['success']
 
     def store_preference_to_history(self):
         """
@@ -111,7 +124,6 @@ class MongoDBClient:
         '''
         url = f"{API_URL}/get_genre_list"
         response = requests.get(url)
-        
         if response.status_code != 200:
             return None
         else:
@@ -127,10 +139,12 @@ class MongoDBClient:
         """
         
         url = f"{TMDB_URL}/configuration/languages"
-        
+        #TMDB_API_KEY = "bf2a409e2a9c66f245a0b3d223179222" #TODO: remove
+
         headers = {
             "accept": "application/json",
             "Authorization": TMDB_AUTH_TOKEN
+            #'api_key': TMDB_API_KEY,
         }
         response = requests.get(url ,headers=headers)
         if response.status_code != 200:
@@ -139,8 +153,6 @@ class MongoDBClient:
         return [language['english_name'] for language in data]
 
 
-class Web3Client(MongoDBClient):
-    pass
 
 
 
