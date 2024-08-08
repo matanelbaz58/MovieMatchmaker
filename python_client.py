@@ -7,7 +7,7 @@ TMDB_AUTH_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZjJhNDA5ZTJhOWM2NmYyN
 
 
 
-class MongoDBClient:
+class Client:
     def __init__(self, isMongoDBClient: bool):
         self.user_name = None
         self.user_password = None
