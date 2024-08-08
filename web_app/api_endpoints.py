@@ -83,7 +83,7 @@ def remove_user():
         return jsonify({'success': False, 'message': 'Incorrect password'}), 401
     collection.delete_one({'user_name': user_name})
     user = collection.find_one({'user_name': user_name})
-    return jsonify({'success': True}), 200
+    return jsonify({'success': user is None}), 200
 
 
 @api_endpoints.route('/login_mongoDB', methods=['POST'])
