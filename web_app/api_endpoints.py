@@ -113,3 +113,74 @@ def login_user():
     return jsonify({'success': True}), 200
 
 
+@api_endpoints.route('/get_movie_recommendations', methods=['GET'])
+def get_movie_recommendations():
+    """
+    Fetch movie recommendations based on user input.
+    Parameters:
+        user_input (dict): A dictionary containing user preferences. if a key is missing, the default value is used.
+            user_input = {
+                "language": "",
+                "region": "",
+                "sort_by": "popularity.desc",
+                "certification_country": "",
+                "certification": "",
+                "certification.lte": "",
+                "certification.gte": "",
+                "include_adult": False,
+                "include_video": False,
+                "page": 1,
+                "primary_release_year": "",
+                "primary_release_date.gte": "",
+                "primary_release_date.lte": "",
+                "release_date.gte": "",
+                "release_date.lte": "",
+                "vote_average.gte": "",
+                "vote_average.lte": "",
+                "vote_count.gte": "",
+                "vote_count.lte": "",
+                "watch_region": "",
+                "with_cast": "",
+                "with_companies": "",
+                "with_crew": "",
+                "with_genres": "",
+                "with_keywords": "",
+                "with_origin_country": "",
+                "with_original_language": "",
+                "with_people": "",
+                "with_release_type": "",
+                "with_runtime.gte": "",
+                "with_runtime.lte": "",
+                "with_watch_monetization_types": "",
+                "with_watch_providers": "",
+                "without_companies": "",
+                "without_genres": "",
+                "without_keywords": "",
+                "without_watch_providers": "",
+                "year": ""
+            }
+
+    Returns:
+        A list of dictionaries. each dictionarie contains data about a movie recommendation.
+        Each dictionarie contains the next keys:
+            'backdrop_path' (path to a backround imaage, could be used for text backround)
+            'genre_ids'
+            'title'
+            'original_language'
+            'overview' (a short description of the movie)
+            'popularity'
+            'poster_path' (path to the movie's main cover  image)
+            'release_date'
+            'title'
+    """
+    user_input = request.args.to_dict()
+    user_input['api_key'] = TMDB_API_KEY
+
+    url = f"{TMDB_BASE_URL}/discover/movie"
+    response = requests.get(url, params=user_input)
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to fetch data"}), response.status_code
+    # all dict keys: ['adult', 'backdrop_path', 'genre_ids', 'id', 'original_language', 'original_title', 'overview','popularity', 'poster_path', 'release_date', 'title', 'video', 'vote_average', 'vote_count']
+    return jsonify(response.json()), 200
+   
+    

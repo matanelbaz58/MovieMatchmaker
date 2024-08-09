@@ -26,6 +26,10 @@ def test_get_requests_from_server():
     '''
     client = Client(True)
     assert client.get_genre_list() == GENRE_LIST
+    movie_recomend = client.get_movie_recommendations({"include_adult":"false","include_video":"false","language":"en-US",'with_genres':'comedy'})
+    assert type(movie_recomend) == list
+    assert len(movie_recomend) == 10
+
 
 
 def test_user_authentication():
@@ -48,5 +52,6 @@ def test_user_authentication():
 
 
 if __name__ == '__main__':
-    #pytest.main()
-    test_user_authentication()
+    pytest.main()
+
+    
