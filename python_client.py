@@ -68,6 +68,15 @@ class Client:
         """
         pass
 
+    def get_genre_dropdown_list(self) -> list:
+        """
+        Fetches a list of movie genres from the API.
+
+        Returns:
+            list: A list of movie genres.
+        """
+        return list(self.genre_list.keys())
+
     def get_preference_history(self) -> dict:
         """
         Retrieves the user's search history from MongoDB.
@@ -94,7 +103,6 @@ class Client:
                     "certification.gte": "",
                     "include_adult": False,
                     "include_video": False,
-                    "page": 1,
                     "primary_release_year": "",
                     "primary_release_date.gte": "",
                     "primary_release_date.lte": "",
