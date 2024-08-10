@@ -14,7 +14,14 @@ USER_EXIST_AND_INCORRECT_PASSWORD = 2
 # Global variables
 users_file = 'users.json'
 
-
+def dropdown(name_field):
+    # Dummy implementation of the dropdown function
+    # Replace this with your actual logic to get the list of options for each field
+    if name_field == "year":
+        return [str(year) for year in range(1900, 2024)]
+    else:
+        return [f"Option {i}" for i in range(1, 6)]
+    
 def register():
     # Get the username and password from the entry fields
     username = new_username_entry.get()
@@ -65,22 +72,25 @@ def show_recommendation_frame():
     registration_frame.pack_forget()
     recommendation_frame.pack()
 
-def submit():
+def submit(entries):
     # Get the movie name and year from the entry fields and query the movie data
-    get_movie_recommendations()
+    get_movie_recommendations(entries)
 
-def get_movie_recommendations():
-    # Print the movie name and year for querying
-    year = year_entry.get()
-    params = {
-    "year": year,
-    }   
+def get_movie_recommendations(entries):
+    # Collect all the fields from the entries dictionary
+    params = {field: entry.get() for field, entry in entries.items() if entry.get()}
+    
+    # Print the collected parameters for debugging
+    print("Query Parameters:", params)
+    
+    # Fetch movie recommendations using the collected parameters
     rc = user_object.get_movie_recommendations(params)
-    if rc == None:
+    
+    if rc is None:
         messagebox.showerror("Error", "Failed to fetch movie recommendations.")
     else:
         messagebox.showinfo("Success", "Movie recommendations fetched successfully.")
-        # shoe the recommendations in a new window
+        # Show the recommendations in a new window
         show_recommendations(rc)
         user_object.store_preference_to_history()
     
@@ -91,16 +101,33 @@ def show_recommendations(rc):
     recommendations_window.geometry("400x300")
 
     # Display a list of movie titles
-    if isinstance(rc, list):
-        for i, movie in enumerate(rc):
+    if isinstance(rc, list) and len(rc) > 0:
+        for i, movie in enumerate(rc[:3]):  # Display only the first 3 movies
             movie_title = movie.get('title', 'Unknown Title')
+            movie_image_url = movie.get('image_url', None)  # Assuming 'image_url' is the key for the image URL
+
+            # Display the movie title
             ttk.Label(recommendations_window, text=f"{i+1}. {movie_title}").pack(anchor='w', padx=10, pady=5)
+
+            # Display the movie image if available
+            if movie_image_url:
+                try:
+                    response = requests.get(movie_image_url)
+                    image_data = response.content
+                    image = Image.open(BytesIO(image_data))
+                    image = image.resize((100, 150), Image.ANTIALIAS)  # Resize the image to fit the window
+                    photo = ImageTk.PhotoImage(image)
+                    label = ttk.Label(recommendations_window, image=photo)
+                    label.image = photo  # Keep a reference to avoid garbage collection
+                    label.pack(anchor='w', padx=10, pady=5)
+                except Exception as e:
+                    print(f"Failed to load image for {movie_title}: {e}")
+                    ttk.Label(recommendations_window, text="Image not available").pack(anchor='w', padx=10, pady=5)
     else:
         ttk.Label(recommendations_window, text="No recommendations available.").pack(anchor='center', padx=10, pady=10)
 
     # Add a close button
     ttk.Button(recommendations_window, text="Close", command=recommendations_window.destroy).pack(pady=10)
-
 
 def setup_login_frame(root):
     # Create the login frame with entry fields for username and password
@@ -134,15 +161,9 @@ def setup_registration_frame(root):
     back_to_login_button.pack()
 
 def setup_recommendation_frame(root):
-    # Create the recommendation frame with entry fields for movie name and year
-    global recommendation_frame, name_entry, year_entry
+    # Create the recommendation frame
+    global recommendation_frame
     recommendation_frame = ttk.Frame(root, padding="10 10 10 10")
-    ttk.Label(recommendation_frame, text="Movie Name:").grid(row=0, column=0)
-    name_entry = ttk.Entry(recommendation_frame)
-    name_entry.grid(row=0, column=1)
-    ttk.Label(recommendation_frame, text="Year:").grid(row=1, column=0)
-    year_entry = ttk.Entry(recommendation_frame)
-    year_entry.grid(row=1, column=1)
 
     # New fields
     options = ["language", "region", "sort_by", "certification_country", "certification", 
@@ -152,13 +173,18 @@ def setup_recommendation_frame(root):
                "with_people", "with_runtime.gte", "with_runtime.lte", "without_companies", 
                "without_genres", "without_keywords", "year"]
 
-    for i, option in enumerate(options, start=2):  # start from the 3rd row
+    entries = {}
+    for i, option in enumerate(options):  # start from the 1st row
         ttk.Label(recommendation_frame, text=f"{option}:").grid(row=i, column=0)
+        options_list = dropdown(option)
+        combobox = ttk.Combobox(recommendation_frame, values=options_list)
+        combobox.grid(row=i, column=1)
         entry = ttk.Entry(recommendation_frame)
-        entry.grid(row=i, column=1)
+        entries[option] = combobox
 
-    submit_button = ttk.Button(recommendation_frame, text="Submit", command=submit)
-    submit_button.grid(row=len(options) + 2, column=0, columnspan=2)  # place the button after the last option
+    submit_button = ttk.Button(recommendation_frame, text="Submit", command=lambda: submit(entries))
+    submit_button.grid(row=len(options) + 1, column=0, columnspan=2)
+
 
 def main():
     # Create the main window and set up the frames
