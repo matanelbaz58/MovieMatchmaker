@@ -67,15 +67,40 @@ def show_recommendation_frame():
 
 def submit():
     # Get the movie name and year from the entry fields and query the movie data
-    movie_name = name_entry.get()
-    movie_year = year_entry.get()
-    user_object.user_input['year'] = movie_year
+    get_movie_recommendations()
 
-    query_movie_data(movie_name, movie_year)
-
-def query_movie_data(name, year):
+def get_movie_recommendations():
     # Print the movie name and year for querying
-    print(user_object.make_api_call())# need to change. -----------------------------------------------------------
+    year = year_entry.get()
+    params = {
+    "year": year,
+    }   
+    rc = user_object.get_movie_recommendations(params)
+    if rc == None:
+        messagebox.showerror("Error", "Failed to fetch movie recommendations.")
+    else:
+        messagebox.showinfo("Success", "Movie recommendations fetched successfully.")
+        # shoe the recommendations in a new window
+        show_recommendations(rc)
+        user_object.store_preference_to_history()
+    
+def show_recommendations(rc):
+    # Create a new window to display the movie recommendations
+    recommendations_window = tk.Toplevel()
+    recommendations_window.title("Movie Recommendations")
+    recommendations_window.geometry("400x300")
+
+    # Display a list of movie titles
+    if isinstance(rc, list):
+        for i, movie in enumerate(rc):
+            movie_title = movie.get('title', 'Unknown Title')
+            ttk.Label(recommendations_window, text=f"{i+1}. {movie_title}").pack(anchor='w', padx=10, pady=5)
+    else:
+        ttk.Label(recommendations_window, text="No recommendations available.").pack(anchor='center', padx=10, pady=10)
+
+    # Add a close button
+    ttk.Button(recommendations_window, text="Close", command=recommendations_window.destroy).pack(pady=10)
+
 
 def setup_login_frame(root):
     # Create the login frame with entry fields for username and password

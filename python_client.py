@@ -77,7 +77,7 @@ class Client:
         """
         pass
     
-    def get_movie_recommendations(self, user_input: dict[str, str]) -> list[dict]:
+    def get_movie_recommendations(self, user_input) -> list[dict]:
         """
         Fetch movie recommendations based on user input.
 
@@ -166,7 +166,11 @@ class Client:
         """
         
         url = f"{API_URL}/get_movie_recommendations"
-        user_input['with_genres'] = self.genre_list[user_input['with_genres'].capitalize()]
+        print(user_input)
+        x = user_input['year']
+        print(x)
+        #z = self.genre_list[user_input['year']]
+        #user_input['year'] = self.genre_list[user_input['year']]
         response = requests.get(url, params=user_input)
 
         if response.status_code != 200:
