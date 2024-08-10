@@ -18,18 +18,18 @@ def test_direct_api_calls():
     Test the API calls that are called directly from the TMDB API without using the server as an intermediary.
     '''
     client = Client(True)
-    assert client.get_language_list().sort() == LANGUAGE_LIST.sort()
+    assert client.get_list_for_gui_dropdown('language') == LANGUAGE_LIST.sort()
+
 
 def test_get_requests_from_server():
     '''
     Test the API calls that are made through the server.
     '''
     client = Client(True)
-    assert client.get_genre_list() == GENRE_LIST
-    movie_recomend = client.get_movie_recommendations({"include_adult":"false","include_video":"false","language":"en-US",'with_genres':'comedy'})
+    assert client.get_genre_dict() == GENRE_LIST
+    movie_recomend = client.get_movie_recommendations(user_input={'language': 'en', 'genre': 'comedy'})
     assert type(movie_recomend) == list
     assert len(movie_recomend) == 10
-
 
 
 def test_user_authentication():
@@ -45,7 +45,7 @@ def test_user_authentication():
     assert client_2.login('test_user', 'rong_password') == 2
     assert client_2.login('test_user', 'test_password') == 1
 
-    assert client.remove_user('test_user', 'test_password') == True #TODO: fix bug
+    assert client.remove_user('test_user', 'test_password') == True 
     assert client.remove_user('test_user', 'test_password') == False
 
     assert client_2.login('test_user', 'test_password') == 0
