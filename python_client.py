@@ -4,7 +4,7 @@ import requests
 API_URL = "http://localhost:5000"
 TMDB_URL = "https://api.themoviedb.org/3"
 TMDB_AUTH_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZjJhNDA5ZTJhOWM2NmYyNDVhMGIzZDIyMzE3OTIyMiIsInN1YiI6IjY1ZGNmMzUyOGMwYTQ4MDEzMTFkYTI0OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.1_XHPeZXtKSrozDmPcZKEaIbz4W5CpfloqD0l0LDLtY"
-
+SORT_BY_OPTIONS = {'popularity' : 'popularity.desc', 'release_date' : 'release_date.desc', 'vote_average' : 'vote_average.desc'}
 
 
 class Client:
@@ -12,7 +12,8 @@ class Client:
         self.user_name = None
         self.user_password = None
         self.wallet_address = None
-        self.genre_list = self.get_genre_list()
+        self.genre_dict = self.get_genre_dict()
+        self.language_dict = self.get_language_dict()
         #self.search_history_manager = MongoDBClient if isMongoDBClient else Web3HistoryManager
 
     def login(self, user_name: str, user_password: str) -> int:
@@ -68,14 +69,24 @@ class Client:
         """
         pass
 
-    def get_genre_dropdown_list(self) -> list:
+    def get_list_for_gui_dropdown(self, field: str) -> list:
         """
-        Fetches a list of movie genres from the API.
+        Fetches a list of items for a dropdown menu in the GUI.
+
+        Args:
+            field (str): The field for which to fetch the list.
 
         Returns:
-            list: A list of movie genres.
+            list: A list of items for the dropdown menu.
         """
-        return list(self.genre_list.keys())
+        switcher = {
+            'genre': list(self.genre_dict.keys()).sort(),
+            'language': list(self.language_dict.keys()).sort(),
+            'sort_by': list(SORT_BY_OPTIONS.keys()).sort()
+        }
+        return switcher.get(field, [])
+
+
 
     def get_preference_history(self) -> dict:
         """
@@ -95,7 +106,6 @@ class Client:
                 A dictionary containing user preferences. if a key is missing, the default value is used.
                 user_input = {
                     "language": "",
-                    "region": "",
                     "sort_by": "popularity.desc",
                     "certification_country": "",
                     "certification": "",
@@ -174,17 +184,13 @@ class Client:
         """
         
         url = f"{API_URL}/get_movie_recommendations"
-        print(user_input)
-        x = user_input['year']
-        print(x)
-        #z = self.genre_list[user_input['year']]
-        #user_input['year'] = self.genre_list[user_input['year']]
+
         response = requests.get(url, params=user_input)
 
         if response.status_code != 200:
             return response
         else:
-            data = response.json()['results'][:10]            
+            data = response.json()['results'][:10]           
             return [self.process_movie_recommendations(movie_dict) for movie_dict in data]
     
     def process_movie_recommendations(self, data: dict) -> dict:
@@ -192,16 +198,14 @@ class Client:
         return {key: data[key] for key in keys_to_keep if key in data}
           
 
-    def get_genre_list(self) -> dict[str, int]:
+    def get_genre_dict(self) -> dict[str, int]:
         '''
         Fetches a list of movie genres from the API.
         
         returns:
-            dict: A dictionary containing movie genres and their corresponding IDs.
-
-        
+            dict: A dictionary containing movie genres and their corresponding IDs.      
         '''
-        url = f"{API_URL}/get_genre_list"
+        url = f"{API_URL}/get_genre_dict"
         response = requests.get(url)
         if response.status_code != 200:
             return None
@@ -209,28 +213,24 @@ class Client:
             return response.json()
 
 
-    def get_language_list(self) -> dict:
+    def get_language_dict(self) -> dict:
         """
-        Fetches a list of languages from the API.
-
+        Fetches a dictionary 
         Returns:
             dict: A dictionary containing languages and their corresponding ISO 639-1 codes.
         """
         
         url = f"{TMDB_URL}/configuration/languages"
-        #TMDB_API_KEY = "bf2a409e2a9c66f245a0b3d223179222" #TODO: remove
 
         headers = {
             "accept": "application/json",
             "Authorization": TMDB_AUTH_TOKEN
-            #'api_key': TMDB_API_KEY,
         }
         response = requests.get(url ,headers=headers)
         if response.status_code != 200:
             return None
         data = response.json()
-        return [language['english_name'] for language in data]
-
+        return {language['english_name']: language['iso_639_1'] for language in data}
 
 
 

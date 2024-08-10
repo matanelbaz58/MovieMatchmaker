@@ -10,14 +10,14 @@ TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 api_endpoints = Blueprint('api_endpoints', __name__)
 
 
-@api_endpoints.route('/get_genre_list', methods=['GET'])
+@api_endpoints.route('/get_genre_dict', methods=['GET'])
 def get_genre_list():
-    """
-    Fetches a list of movie genres and their corresponding IDs from the TMDB API.
+    '''
+    Fetches a list of movie genres from the API.
     
-    Returns:
-        dict: A dictionary containing movie genres and their corresponding IDs.
-    """
+    returns:
+        dict: A dictionary containing movie genres and their corresponding IDs.      
+    '''
     url = f"{TMDB_BASE_URL}/genre/movie/list"
     params = {
         'api_key': TMDB_API_KEY,
