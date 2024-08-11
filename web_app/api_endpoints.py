@@ -184,7 +184,7 @@ def get_movie_recommendations():
    
 @api_endpoints.route('/get_movie_images', methods=['GET'])    
 def get_movie_images(movie_id: int) -> dict:
-    url = f"{BASE_URL}/movie/{movie_id}/images"
+    url = f"{    git add -ABASE_URL}/movie/{movie_id}/images"
     params = {
         'api_key': API_KEY
     }
