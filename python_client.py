@@ -4,7 +4,7 @@ import requests
 SERVER_URL = "http://localhost:5000"
 TMDB_URL = "https://api.themoviedb.org/3"
 TMDB_AUTH_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZjJhNDA5ZTJhOWM2NmYyNDVhMGIzZDIyMzE3OTIyMiIsInN1YiI6IjY1ZGNmMzUyOGMwYTQ4MDEzMTFkYTI0OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.1_XHPeZXtKSrozDmPcZKEaIbz4W5CpfloqD0l0LDLtY"
-SORT_BY_OPTIONS = {'popularity' : 'popularity.desc', 'release_date' : 'release_date.desc', 'vote_average' : 'vote_average.desc'}
+SORT_BY_OPTIONS = {'popularity' : 'popularity.desc', 'release date' : 'releasedate.desc', 'vote average' : 'vote_average.desc'}
 
 
 class Client:
@@ -80,11 +80,11 @@ class Client:
             list: A list of items for the dropdown menu.
         """
         switcher = {
-            'genre': list(self.genre_dict.keys()).sort(),
-            'language': list(self.language_dict.keys()).sort(),
-            'sort_by': list(SORT_BY_OPTIONS.keys()).sort()
+            'genre': list(self.genre_dict.keys()),
+            'language': list(self.language_dict.keys()),
+            'sort_by': list(SORT_BY_OPTIONS.keys())
         }
-        return switcher.get(field, [])
+        return sorted(switcher.get(field, []))
 
 
 
@@ -210,7 +210,10 @@ class Client:
         """
         
         url = f"{SERVER_URL}/get_movie_recommendations"
-
+        
+        user_input['genre'] = self.genre_dict[user_input['genre']]
+        user_input['language'] = self.language_dict[user_input['language']]
+        user_input['sort_by'] = SORT_BY_OPTIONS[user_input['sort_by']]
         response = requests.get(url, params=user_input)
 
         if response.status_code != 200:
