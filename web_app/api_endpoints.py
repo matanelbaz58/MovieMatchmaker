@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 import requests
 from pymongo import MongoClient
 
-
+ABI = '[{"inputs":[],"name":"num","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"person","outputs":[{"internalType":"uint256","name":"num","type":"uint256"},{"internalType":"string","name":"name","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"retrive","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_num","type":"uint256"}],"name":"store","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stru","outputs":[{"internalType":"uint256","name":"num","type":"uint256"},{"internalType":"string","name":"name","type":"string"}],"stateMutability":"view","type":"function"}]'
 MONGO_STR = "mongodb+srv://simmeryaniv:gSNjq96LSO7IMxt6@moviematchmakerdb.ql3efn4.mongodb.net/"
 TMDB_API_KEY = "bf2a409e2a9c66f245a0b3d223179222"
 TMDB_BASE_URL = 'https://api.themoviedb.org/3'
@@ -180,7 +180,45 @@ def get_movie_recommendations():
     response = requests.get(url, params=user_input)
     if response.status_code != 200:
         return jsonify({"error": "Failed to fetch data"}), response.status_code
-    # all dict keys: ['adult', 'backdrop_path', 'genre_ids', 'id', 'original_language', 'original_title', 'overview','popularity', 'poster_path', 'release_date', 'title', 'video', 'vote_average', 'vote_count']
     return jsonify(response.json()), 200
    
+@api_endpoints.route('/get_movie_images', methods=['GET'])    
+def get_movie_images(movie_id: int) -> dict:
+    url = f"{BASE_URL}/movie/{movie_id}/images"
+    params = {
+        'api_key': API_KEY
+    }
+    response = requests.get(url, params=params)
+    if response.status_code != 200:
+        return {"error": "Failed to fetch data"}, response.status_code
+    return response.json() 
+
+
+@api_endpoints.route('/get_movie_id_by_name', methods=['GET'])
+def get_movie_id_by_name(self):
+    '''
+    Fetches the ID of a movie by its title.
     
+    Parameters:
+        movie_title (str): The title of the movie to search for.
+        
+    Returns:
+        int: The ID of the movie.
+    '''
+    movie_title = request.args.get('movie_title')
+    url = f"{TMDB_BASE_URL}/search/movie"
+    params = {
+        'api_key': TMDB_API_KEY,
+        'query': movie_title
+    }
+
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        if data['results']:
+            return data['results'][0]['id']  # Returns the ID of the first result
+        else:
+            return None  # No results found
+    else:
+        print(f"Error: Unable to fetch data (Status Code: {response.status_code})")
+        return None

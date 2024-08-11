@@ -234,4 +234,26 @@ class Client:
 
 
 
+    def get_movie_images(self, movie_title: int) -> dict:
+        """
+        Fetches images of a movie from the API.
 
+        Parameters:
+            movie_id (int): The ID of the movie.
+
+        Returns:
+            dict: A dictionary containing images of the movie.
+        """
+        url = f"{API_URL}/get_movie_id_by_name"
+        response = requests.get(url, params={"movie_title": movie_title})
+        if response.status_code != 200:
+            return None
+        movie_id = response.json()
+        url = f"{TMDB_URL}/movie/{movie_id}/images"
+        response = requests.get(url)
+        if response.status_code != 200:
+            return None
+        return response.json()
+    
+
+       
