@@ -1,7 +1,7 @@
 import requests
 
 
-API_URL = "http://localhost:5000"
+SERVER_URL = "http://localhost:5000"
 TMDB_URL = "https://api.themoviedb.org/3"
 TMDB_AUTH_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZjJhNDA5ZTJhOWM2NmYyNDVhMGIzZDIyMzE3OTIyMiIsInN1YiI6IjY1ZGNmMzUyOGMwYTQ4MDEzMTFkYTI0OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.1_XHPeZXtKSrozDmPcZKEaIbz4W5CpfloqD0l0LDLtY"
 SORT_BY_OPTIONS = {'popularity' : 'popularity.desc', 'release_date' : 'release_date.desc', 'vote_average' : 'vote_average.desc'}
@@ -29,7 +29,7 @@ class Client:
             1 (int): if the user was logged in successfully.
             2 (int): if the password is incorrect.
         """
-        response = requests.post(f"{API_URL}/login_mongoDB", json={"user_name": user_name, "user_password": user_password})
+        response = requests.post(f"{SERVER_URL}/login_mongoDB", json={"user_name": user_name, "user_password": user_password})
         if response.status_code == 400:
             return 0
         elif response.status_code == 401:
@@ -48,7 +48,7 @@ class Client:
             True : if the user was added successfully.
             False : if the user name already exists or failed to add.
         """
-        response = requests.post(f"{API_URL}/register_mongoDB", json={"user_name": user_name, "user_password": user_password})
+        response = requests.post(f"{SERVER_URL}/register_mongoDB", json={"user_name": user_name, "user_password": user_password})
         self.login(user_name, user_password)
         return response.json()['success']
 
@@ -60,7 +60,7 @@ class Client:
             True : if the user was removed successfully.
             False : if the user name does not exist or failed to remove.
         """
-        response = requests.post(f"{API_URL}/remove_user_from_mongoDB", json={"user_name": user_name, "user_password": user_password})
+        response = requests.post(f"{SERVER_URL}/remove_user_from_mongoDB", json={"user_name": user_name, "user_password": user_password})
         return response.json()['success']
 
     def store_preference_to_history(self):
@@ -97,11 +97,13 @@ class Client:
         """
         pass
     
-    def get_movie_recommendations(self, user_input) -> list[dict]:
+    def get_movie_recommendations(self, user_input, poster_image_size=500) -> list[dict]:
         """
         Fetch movie recommendations based on user input.
 
         Parameters:
+            poster_image_size (int): The size of the poster image to fetch. default is 500.
+        
             user_input (dict): 
                 A dictionary containing user preferences. if a key is missing, the default value is used.
                 user_input = {
@@ -162,28 +164,65 @@ class Client:
         Example python usage:
             user_input = {'user_id': 123, 'genre': 'comedy'}
             recommendations = get_movie_recommendations(user_input)
+                Example of poster_image usage:
+            import requests
+            from io import BytesIO
+            import tkinter as tk
+            from PIL import Image, ImageTk
 
+            root = tk.Tk()
+            root.title("Movie Poster")
+    
+            # Load image data into PIL and then convert it to a format tkinter can use
+            img = Image.open(BytesIO(img_data))
+            img_tk = ImageTk.PhotoImage(img
+            # Create a label and add the image to it
+            label = tk.Label(root, image=img_tk)
+            label.image = img_tk  # Keep a reference to avoid garbage collection
+            label.pack(
+            # Run the tkinter loop
+            root.mainloop()
 
+                Example of poster_image usage:
+            import requests
+            from io import BytesIO
+            import tkinter as tk
+            from PIL import Image, ImageTk
+
+            root = tk.Tk()
+            root.title("Movie Poster")
+    
+            # Load image data into PIL and then convert it to a format tkinter can use
+            img = Image.open(BytesIO(img_data))
+            img_tk = ImageTk.PhotoImage(img
+            # Create a label and add the image to it
+            label = tk.Label(root, image=img_tk)
+            label.image = img_tk  # Keep a reference to avoid garbage collection
+            label.pack(
+            # Run the tkinter loop
+            root.mainloop()
+
+                
         Example return value:
             [
                 {
                     'title': 'Movie Title 1',
                     'release_date': '2023-01-01',
-                    'poster_path': '/path/to/poster1.jpg',
-                    'genre_ids': [28, 35]
+                    'poster_path': '\\x81\\x0b\\x7 ...',
+                    'genre_ids': ['Comedy', 'Family']
                     ...
                 },
                 {
                     'title': 'Movie Title 2',
                     'release_date': '2023-02-01',
-                    'poster_path': '/path/to/poster2.jpg'
+                    'poster_path': '\\x81\\x0b\\x7 ...',
                     ...
                 },
                 ...
             ]           
         """
         
-        url = f"{API_URL}/get_movie_recommendations"
+        url = f"{SERVER_URL}/get_movie_recommendations"
 
         response = requests.get(url, params=user_input)
 
@@ -191,11 +230,20 @@ class Client:
             return response
         else:
             data = response.json()['results'][:10]           
-            return [self.process_movie_recommendations(movie_dict) for movie_dict in data]
+            return [self.process_movie_recommendations(movie_dict, poster_image_size) for movie_dict in data]
     
-    def process_movie_recommendations(self, data: dict) -> dict:
+    def process_movie_recommendations(self, data: dict, poster_image_size) -> dict:
         keys_to_keep = ['backdrop_path', 'genre_ids', 'title', 'original_language', 'overview', 'popularity', 'poster_path', 'release_date']
-        return {key: data[key] for key in keys_to_keep if key in data}
+        return {
+            key: (
+                requests.get(f"https://image.tmdb.org/t/p/w{poster_image_size}{data[key]}").content
+                if key == 'poster_path' else
+                [k for k, v in self.genre_dict.items() if v in data[key]]
+                if key == 'genre_ids' else
+                data[key]
+            )
+            for key in keys_to_keep if key in data
+        }
           
 
     def get_genre_dict(self) -> dict[str, int]:
@@ -205,7 +253,7 @@ class Client:
         returns:
             dict: A dictionary containing movie genres and their corresponding IDs.      
         '''
-        url = f"{API_URL}/get_genre_dict"
+        url = f"{SERVER_URL}/get_genre_dict"
         response = requests.get(url)
         if response.status_code != 200:
             return None
@@ -244,16 +292,38 @@ class Client:
         Returns:
             dict: A dictionary containing images of the movie.
         """
-        url = f"{API_URL}/get_movie_id_by_name"
+        url = f"{SERVER_URL}/get_movie_id_by_name"
         response = requests.get(url, params={"movie_title": movie_title})
         if response.status_code != 200:
-            return None
+            return 44
         movie_id = response.json()
-        url = f"{TMDB_URL}/movie/{movie_id}/images"
-        response = requests.get(url)
+        url = f"{SERVER_URL}/get_movie_images"
+        response = requests.get(url, params={"movie_id": movie_id})
         if response.status_code != 200:
-            return None
+            
+            return 33
         return response.json()
     
 
-       
+
+
+
+# movie_title = 'The Shawshank Redemption'
+# url = 'https://api.themoviedb.org/3/search/movie'
+# params = {
+#     'api_key': 'bf2a409e2a9c66f245a0b3d223179222',
+#     'query': movie_title
+# }
+
+# response = requests.get(url, params=params)
+# if response.status_code == 200:
+#     data = response.json()
+#     if data['results']:
+#         x= data['results'][0]['id']  # Returns the ID of the first result
+#     else:
+#         x= 9 
+# else:
+#     print(f"Error: Unable to fetch data (Status Code: {response.status_code})")
+#     x=2
+
+# print(x)

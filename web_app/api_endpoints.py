@@ -183,19 +183,21 @@ def get_movie_recommendations():
     return jsonify(response.json()), 200
    
 @api_endpoints.route('/get_movie_images', methods=['GET'])    
-def get_movie_images(movie_id: int) -> dict:
-    url = f"{    git add -ABASE_URL}/movie/{movie_id}/images"
+def get_movie_images() -> dict:
+    movie_id = request.args.get('movie_id')
+    url = f"{TMDB_BASE_URL}/movie/{movie_id}/images"
     params = {
-        'api_key': API_KEY
+        'api_key': TMDB_API_KEY,
+        'movie_id': movie_id
     }
     response = requests.get(url, params=params)
     if response.status_code != 200:
         return {"error": "Failed to fetch data"}, response.status_code
-    return response.json() 
+    return jsonify(response.json()), 200
 
 
 @api_endpoints.route('/get_movie_id_by_name', methods=['GET'])
-def get_movie_id_by_name(self):
+def get_movie_id_by_name():
     '''
     Fetches the ID of a movie by its title.
     
@@ -216,9 +218,9 @@ def get_movie_id_by_name(self):
     if response.status_code == 200:
         data = response.json()
         if data['results']:
-            return data['results'][0]['id']  # Returns the ID of the first result
+            return jsonify(data['results'][0]['id']), 200
         else:
-            return None  # No results found
+            return {"error": "Failed to fetch data"}, response.status_code  # No results found
     else:
         print(f"Error: Unable to fetch data (Status Code: {response.status_code})")
-        return None
+        return {"error": "Failed to fetch data"}, response.status_code
