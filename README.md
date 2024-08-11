@@ -1,7 +1,4 @@
-Here's a professional README file for your project:
-
----
-
+M
 # Movie Recommendation System
 
 ## Overview
@@ -34,7 +31,7 @@ This project serves as the final submission for a computer science course, demon
 - Pip (Python package manager)
 - MongoDB
 - Infura account (for Ethereum blockchain integration)
-- TMDB API Key
+
 
 ### Steps
 
@@ -73,10 +70,7 @@ This project serves as the final submission for a computer science course, demon
   - `/register_mongoDB`: Register a new user.
   - `/login_mongoDB`: Log in as an existing user.
   - `/get_movie_recommendations`: Fetch movie recommendations based on user input.
-
-## Contributing
-
-Contributions are welcome! Please submit a pull request with a detailed description of your changes.
+-
 
 ## License
 
@@ -87,7 +81,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - [The Movie Database (TMDB) API](https://www.themoviedb.org/documentation/api) for providing movie data.
 - [Infura](https://infura.io/) for blockchain connectivity.
 - [MongoDB](https://www.mongodb.com/) for data storage.
-
----
-
-This README should provide a comprehensive and professional overview of your project, making it easier for others to understand and contribute.
+ T
