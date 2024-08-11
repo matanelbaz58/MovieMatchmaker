@@ -103,6 +103,7 @@ class Client:
 
         Parameters:
             poster_image_size (int): The size of the poster image to fetch. default is 500.
+                other options are 92, 154, 185, 342, 500, 780.
         
             user_input (dict): 
                 A dictionary containing user preferences. if a key is missing, the default value is used.
@@ -145,6 +146,7 @@ class Client:
                     "year": ""
                 }
 
+                
         Returns:
             A list of 10 dictionaries. each dictionarie contains data about a movie recommendation.
             Each dictionarie contains the next keys:
@@ -159,50 +161,8 @@ class Client:
                 'title'
             
             .Returns None if the GET request fails.
-        
+
             
-        Example python usage:
-            user_input = {'user_id': 123, 'genre': 'comedy'}
-            recommendations = get_movie_recommendations(user_input)
-                Example of poster_image usage:
-            import requests
-            from io import BytesIO
-            import tkinter as tk
-            from PIL import Image, ImageTk
-
-            root = tk.Tk()
-            root.title("Movie Poster")
-    
-            # Load image data into PIL and then convert it to a format tkinter can use
-            img = Image.open(BytesIO(img_data))
-            img_tk = ImageTk.PhotoImage(img
-            # Create a label and add the image to it
-            label = tk.Label(root, image=img_tk)
-            label.image = img_tk  # Keep a reference to avoid garbage collection
-            label.pack(
-            # Run the tkinter loop
-            root.mainloop()
-
-                Example of poster_image usage:
-            import requests
-            from io import BytesIO
-            import tkinter as tk
-            from PIL import Image, ImageTk
-
-            root = tk.Tk()
-            root.title("Movie Poster")
-    
-            # Load image data into PIL and then convert it to a format tkinter can use
-            img = Image.open(BytesIO(img_data))
-            img_tk = ImageTk.PhotoImage(img
-            # Create a label and add the image to it
-            label = tk.Label(root, image=img_tk)
-            label.image = img_tk  # Keep a reference to avoid garbage collection
-            label.pack(
-            # Run the tkinter loop
-            root.mainloop()
-
-                
         Example return value:
             [
                 {
@@ -219,7 +179,34 @@ class Client:
                     ...
                 },
                 ...
-            ]           
+            ]         
+
+              
+        Example python usage:
+            user_input = {'user_id': 123, 'genre': 'comedy'}
+            recommendations = get_movie_recommendations(user_input)
+        
+        
+        Example of poster_path image showing with tkinter:
+            import requests
+            from io import BytesIO
+            import tkinter as tk
+            from PIL import Image, ImageTk
+
+            responce = Client(True).get_movie_recommendations(user_input={'language': 'en', 'genre': 'comedy'}, poster_image_size=185)
+            img_data = img_data[0]['poster_path']
+            root = tk.Tk()
+            root.title("Movie Poster")
+    
+            # Load image data into PIL and then convert it to a format tkinter can use
+            img = Image.open(BytesIO(img_data))
+            img_tk = ImageTk.PhotoImage(img
+            # Create a label and add the image to it
+            label = tk.Label(root, image=img_tk)
+            label.image = img_tk  # Keep a reference to avoid garbage collection
+            label.pack(
+            # Run the tkinter loop
+            root.mainloop()
         """
         
         url = f"{SERVER_URL}/get_movie_recommendations"
@@ -304,26 +291,3 @@ class Client:
             return 33
         return response.json()
     
-
-
-
-
-# movie_title = 'The Shawshank Redemption'
-# url = 'https://api.themoviedb.org/3/search/movie'
-# params = {
-#     'api_key': 'bf2a409e2a9c66f245a0b3d223179222',
-#     'query': movie_title
-# }
-
-# response = requests.get(url, params=params)
-# if response.status_code == 200:
-#     data = response.json()
-#     if data['results']:
-#         x= data['results'][0]['id']  # Returns the ID of the first result
-#     else:
-#         x= 9 
-# else:
-#     print(f"Error: Unable to fetch data (Status Code: {response.status_code})")
-#     x=2
-
-# print(x)

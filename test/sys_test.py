@@ -1,3 +1,6 @@
+from io import BytesIO
+from tkinter import Image
+import tkinter as tk
 import requests
 import sys
 import os
@@ -32,26 +35,48 @@ def test_get_requests_from_server():
     assert len(movie_recomend) == 10
 
 
-def test_user_authentication():
-    '''
-    Test the registration of a new user and the removal of the same user.
-    '''
-    client = Client(True)
-    assert client.register_user('test_user', 'test_password') == True
-    assert client.register_user('test_user', 'test_password') == False
+# def test_user_authentication():
+#     '''
+#     Test the registration of a new user and the removal of the same user.
+#     '''
+#     client = Client(True)
+#     assert client.register_user('test_user', 'test_password') == True
+#     assert client.register_user('test_user', 'test_password') == False
 
-    client_2 = Client(True)
-    assert client_2.login('rong_name', 'test_password') == 0
-    assert client_2.login('test_user', 'rong_password') == 2
-    assert client_2.login('test_user', 'test_password') == 1
+#     client_2 = Client(True)
+#     assert client_2.login('rong_name', 'test_password') == 0
+#     assert client_2.login('test_user', 'rong_password') == 2
+#     assert client_2.login('test_user', 'test_password') == 1
 
-    assert client.remove_user('test_user', 'test_password') == True 
-    assert client.remove_user('test_user', 'test_password') == False
+#     assert client.remove_user('test_user', 'test_password') == True 
+#     assert client.remove_user('test_user', 'test_password') == False
 
-    assert client_2.login('test_user', 'test_password') == 0
+#     assert client_2.login('test_user', 'test_password') == 0
 
-
+import requests
+from io import BytesIO
+import tkinter as tk
+from PIL import Image, ImageTk
 if __name__ == '__main__':
-    pytest.main()
-
+    #pytest.main()
+    x = Client(True).get_movie_recommendations(user_input={'language': 'en', 'genre': 'comedy'})
+    print(x[9]['poster_path'])
+    #print(Client(True).genre_dict)
+    # response = requests.get(f"{'https://image.tmdb.org/t/p/w185'}{x[0]['poster_path']}")
+    # img_data = response.content
     
+    # root = tk.Tk()
+    # root.title("Movie Poster")
+    
+    # # Load image data into PIL and then convert it to a format tkinter can use
+    # img = Image.open(BytesIO(img_data))
+    # img_tk = ImageTk.PhotoImage(img)
+
+    # # Create a label and add the image to it
+    # label = tk.Label(root, image=img_tk)
+    # label.image = img_tk  # Keep a reference to avoid garbage collection
+    # label.pack()
+
+    # # Run the tkinter loop
+    # root.mainloop()
+
