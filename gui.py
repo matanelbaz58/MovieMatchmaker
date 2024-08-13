@@ -4,6 +4,9 @@ from tkinter import messagebox
 import json
 import os
 import python_client
+import requests
+from PIL import Image, ImageTk
+from io import BytesIO
 
 USER_EXIST = [1,2]
 USER_DOES_NOT_EXIST = 0
@@ -15,13 +18,9 @@ USER_EXIST_AND_INCORRECT_PASSWORD = 2
 users_file = 'users.json'
 
 def dropdown(name_field):
-    # Dummy implementation of the dropdown function
-    # Replace this with your actual logic to get the list of options for each field
-    if name_field == "year":
-        return [str(year) for year in range(1900, 2024)]
-    else:
-        return [f"Option {i}" for i in range(1, 6)]
-    
+    # dropdown function
+    return user_object.get_list_for_gui_dropdown(name_field)
+       
 def register():
     # Get the username and password from the entry fields
     username = new_username_entry.get()
@@ -39,6 +38,9 @@ def register():
         return
 
 def login():
+    messagebox.showinfo("Success", "Logged in successfully.")
+    show_recommendation_frame()
+    return
     # Get the username and password from the entry fields
     username = username_entry.get()
     password = password_entry.get()
@@ -126,8 +128,6 @@ def show_recommendations(rc):
     else:
         ttk.Label(recommendations_window, text="No recommendations available.").pack(anchor='center', padx=10, pady=10)
 
-    # Add a close button
-    ttk.Button(recommendations_window, text="Close", command=recommendations_window.destroy).pack(pady=10)
 
 def setup_login_frame(root):
     # Create the login frame with entry fields for username and password
@@ -166,7 +166,7 @@ def setup_recommendation_frame(root):
     recommendation_frame = ttk.Frame(root, padding="10 10 10 10")
 
     # New fields
-    options = ["language", "region", "sort_by", "certification_country", "certification", 
+    options = ["genre","language", "region", "sort_by", "certification_country", "certification", 
                "certification.lte", "certification.gte", "include_adult", "page", 
                "release_date.gte", "release_date.lte", "watch_region", "with_cast", 
                "with_companies", "with_crew", "with_genres", "with_keywords", 
