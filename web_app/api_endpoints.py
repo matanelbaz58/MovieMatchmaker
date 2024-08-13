@@ -224,3 +224,90 @@ def get_movie_id_by_name():
     else:
         print(f"Error: Unable to fetch data (Status Code: {response.status_code})")
         return {"error": "Failed to fetch data"}, response.status_code
+
+
+@api_endpoints.route('/get_cast_id_by_name', methods=['GET'])
+def get_cast_id_by_name():
+    '''
+    Fetches the ID of an actor by their name.
+    
+    Parameters:
+        actor_name (str): The name of the actor to search for.
+        
+    Returns:
+        int: The ID of the actor.
+    '''
+    actor_name = request.args.get('actor_name')
+    url = f"{TMDB_BASE_URL}/search/person"
+    params = {
+        'api_key': TMDB_API_KEY,
+        'query': actor_name
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        return jsonify(data['results'][0]['id']), 200
+    else:
+        return {"error": "Failed to fetch data"}, response.status_code
+    
+
+@api_endpoints.route('/store_user_to_mongoDB_history', methods=['POST'])
+def store_user_to_mongoDB_history():
+    """
+    Stores the user's search history in MongoDB.
+
+    Parameters:
+        user_name (str): The user's name.
+        user_input (dict): A dictionary containing user preferences.
+
+    Returns:
+        JSON response indicating success or failure.
+    """
+    user_name = request.json.get('user_name')
+    user_input = request.json.get('user_input')
+
+    db = MongoClient(MONGO_STR)['user_management']
+    collection = db['users']
+
+    user = collection.find_one({'user_name': user_name})
+    if user is None:
+        return jsonify({'success': False, 'message': 'User does not exist'}), 400
+    
+    if 'user_preference_history' not in user.keys():
+        user['user_preference_history'] = {}
+
+    history_dict = user['user_preference_history']
+
+    for key, value in user_input.items():
+        if key not in history_dict:
+            history_dict[key] = {value: 1}
+        elif value not in history_dict[key]:
+            history_dict[key][value] = 1
+        else:
+            history_dict[key][value] += 1
+
+    collection.update_one(
+        {'user_name': user_name},
+        {'$set': {'user_preference_history': history_dict}}
+    )
+
+    return jsonify({'success': True}), 200
+       
+@api_endpoints.route('/get_user_history_from_mongoDB', methods=['GET'])
+def get_preference_history_from_mongoDB():
+    '''
+    Fetches the user's search history from MongoDB.
+
+    Parameters:
+        user_name (str): The user's name.
+
+    Returns:
+        dict: A dictionary containing the user's search history.
+    '''
+    user_name = request.args.get('user_name')
+    db = MongoClient(MONGO_STR)['user_management']
+    collection = db['users']
+    user = collection.find_one({'user_name': user_name})
+    if user is None:
+        return jsonify({'error': 'User does not exist'}), 400
+    return jsonify(user['user_preference_history']), 200

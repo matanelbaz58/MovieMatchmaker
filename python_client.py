@@ -88,14 +88,7 @@ class Client:
 
 
 
-    def get_preference_history(self) -> dict:
-        """
-        Retrieves the user's search history from MongoDB.
 
-        Returns:
-        dict: The user's search history.
-        """
-        pass
     
     def get_movie_recommendations(self, user_input, poster_image_size=500) -> list[dict]:
         """
@@ -210,6 +203,8 @@ class Client:
         """
         #TODO: Add a list of main actors cast to the output
         
+        self.store_input_to_history(user_input)
+
         url = f"{SERVER_URL}/get_movie_recommendations"
         
         user_input['genre'] = self.genre_dict[user_input['genre'].capitalize()] if 'genre' in user_input else 28
@@ -297,4 +292,45 @@ class Client:
             return None
         return response.json()
     
+    def store_input_to_history(self, user_input: dict) -> bool:
+        """
+        Stores the user's search history in MongoDB.
+        """
+        
+        url = f"{SERVER_URL}/store_user_to_mongoDB_history"
+        response = requests.post(url, json={"user_input": user_input, "user_name": self.user_name})
+        if response.status_code != 200:
+            return False
+        return True
+    
+    def get_user_history(self) -> dict:
+        """
+        Retrieves the user's search history from MongoDB.
 
+        Returns:
+            dict: The user's search history.
+        """
+        url = f"{SERVER_URL}/get_user_history_from_mongoDB"
+        response = requests.get(url, params={"user_name": self.user_name})
+        if response.status_code != 200:
+            return None
+        return response.json()
+        
+
+    def get_movie_recommendations_by_histoy(self):
+        """
+        Fetch movie recommendations based on user history.
+
+        Returns:
+            same as get_movie_recommendations()
+        """
+        input = self.get_user_history()
+        prosessed_input = {}
+        for key in input.keys():
+            # take the most common value
+            prosessed_input[key] = max(input[key], key=input[key].get)
+        return self.get_movie_recommendations(prosessed_input)
+
+            
+        
+        
