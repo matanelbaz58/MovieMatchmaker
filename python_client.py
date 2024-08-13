@@ -208,12 +208,14 @@ class Client:
             # Run the tkinter loop
             root.mainloop()
         """
+        #TODO: Add a list of main actors cast to the output
         
         url = f"{SERVER_URL}/get_movie_recommendations"
         
-        user_input['genre'] = self.genre_dict[user_input['genre']]
-        user_input['language'] = self.language_dict[user_input['language']]
-        user_input['sort_by'] = SORT_BY_OPTIONS[user_input['sort_by']]
+        user_input['genre'] = self.genre_dict[user_input['genre'].capitalize()] if 'genre' in user_input else 28
+        user_input['language'] = [k for k, v in self.language_dict.items() if v == user_input['language']][0] if 'language' in user_input else 'en'
+        user_input['sort_by'] = SORT_BY_OPTIONS[user_input['sort_by']] if 'sort_by' in user_input else 'popularity.desc'
+        user_input['with_cast'] = requests.get(f"{SERVER_URL}/get_cast_id_by_name", params={"actor_name": user_input['with_cast']}).json() if 'with_cast' in user_input else ''
         response = requests.get(url, params=user_input)
 
         if response.status_code != 200:
@@ -222,19 +224,21 @@ class Client:
             data = response.json()['results'][:10]           
             return [self.process_movie_recommendations(movie_dict, poster_image_size) for movie_dict in data]
     
+        
     def process_movie_recommendations(self, data: dict, poster_image_size) -> dict:
-        keys_to_keep = ['backdrop_path', 'genre_ids', 'title', 'original_language', 'overview', 'popularity', 'poster_path', 'release_date']
-        return {
-            key: (
-                requests.get(f"https://image.tmdb.org/t/p/w{poster_image_size}{data[key]}").content
-                if key == 'poster_path' else
-                [k for k, v in self.genre_dict.items() if v in data[key]]
-                if key == 'genre_ids' else
-                data[key]
-            )
-            for key in keys_to_keep if key in data
-        }
-          
+            keys_to_keep = ['backdrop_path', 'genre_ids', 'title', 'original_language', 'overview', 'popularity', 'poster_path', 'release_date']
+            
+            poster_url = f"https://image.tmdb.org/t/p/w{poster_image_size}{data['poster_path']}" if 'poster_path' in data else None
+            
+            return {
+                key: (
+                    requests.get(poster_url).content if key == 'poster_path' else
+                    [k for k, v in self.genre_dict.items() if v in data[key]] if key == 'genre_ids' else
+                    data[key]
+                )
+                for key in keys_to_keep if key in data
+            } | {'poster_url': poster_url}  
+            
 
     def get_genre_dict(self) -> dict[str, int]:
         '''
@@ -285,12 +289,12 @@ class Client:
         url = f"{SERVER_URL}/get_movie_id_by_name"
         response = requests.get(url, params={"movie_title": movie_title})
         if response.status_code != 200:
-            return 44
+            return None
         movie_id = response.json()
         url = f"{SERVER_URL}/get_movie_images"
         response = requests.get(url, params={"movie_id": movie_id})
-        if response.status_code != 200:
-            
-            return 33
+        if response.status_code != 200:           
+            return None
         return response.json()
     
+
