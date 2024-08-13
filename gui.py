@@ -95,7 +95,26 @@ def get_movie_recommendations(entries):
         # Show the recommendations in a new window
         show_recommendations(rc)
         user_object.store_preference_to_history()
-    
+def show_photo_from_url(url):
+    # Create a new window to display the movie image
+    image_window = tk.Toplevel()
+    image_window.title("Movie Image")
+
+    # Fetch the image from the URL
+    response = requests.get(url)
+    image_data = response.content
+
+    # Open the image using Pillow
+    image = Image.open(BytesIO(image_data))
+
+    # Convert the image to a format Tkinter can use
+    photo = ImageTk.PhotoImage(image)
+
+    # Create a label to display the image
+    label = tk.Label(image_window, image=photo)
+    label.image = photo  # Keep a reference to avoid garbage collection
+    label.pack()
+
 def show_recommendations(rc):
     # Create a new window to display the movie recommendations
     recommendations_window = tk.Toplevel()
@@ -104,27 +123,18 @@ def show_recommendations(rc):
 
     # Display a list of movie titles
     if isinstance(rc, list) and len(rc) > 0:
-        for i, movie in enumerate(rc[:3]):  # Display only the first 3 movies
+        # save the number of movies
+        num_movies = len(rc)
+        print(f"Number of movies: {num_movies}")
+        num_loops = 8 if num_movies >= 8 else num_movies
+        for i, movie in enumerate(rc[:num_loops]):  
             movie_title = movie.get('title', 'Unknown Title')
-            movie_image_url = movie.get('image_url', None)  # Assuming 'image_url' is the key for the image URL
+            movie_image_url = movie.get('poster_url', None)
 
-            # Display the movie title
-            ttk.Label(recommendations_window, text=f"{i+1}. {movie_title}").pack(anchor='w', padx=10, pady=5)
-
-            # Display the movie image if available
-            if movie_image_url:
-                try:
-                    response = requests.get(movie_image_url)
-                    image_data = response.content
-                    image = Image.open(BytesIO(image_data))
-                    image = image.resize((100, 150), Image.ANTIALIAS)  # Resize the image to fit the window
-                    photo = ImageTk.PhotoImage(image)
-                    label = ttk.Label(recommendations_window, image=photo)
-                    label.image = photo  # Keep a reference to avoid garbage collection
-                    label.pack(anchor='w', padx=10, pady=5)
-                except Exception as e:
-                    print(f"Failed to load image for {movie_title}: {e}")
-                    ttk.Label(recommendations_window, text="Image not available").pack(anchor='w', padx=10, pady=5)
+            # Display the movie title as a button
+            button = ttk.Button(recommendations_window, text=f"{i+1}. {movie_title}", command=lambda url=movie_image_url: show_photo_from_url(url))
+            button.pack(anchor='w', padx=10, pady=5)
+       
     else:
         ttk.Label(recommendations_window, text="No recommendations available.").pack(anchor='center', padx=10, pady=10)
 
