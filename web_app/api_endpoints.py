@@ -294,7 +294,7 @@ def store_user_to_mongoDB_history():
     return jsonify({'success': True}), 200
        
 @api_endpoints.route('/get_user_history_from_mongoDB', methods=['GET'])
-def get_preference_history_from_mongoDB():
+def get_user_history_from_mongoDB():
     '''
     Fetches the user's search history from MongoDB.
 
@@ -311,3 +311,25 @@ def get_preference_history_from_mongoDB():
     if user is None:
         return jsonify({'error': 'User does not exist'}), 400
     return jsonify(user['user_preference_history']), 200
+
+
+@api_endpoints.route('/clear_user_history_from_mongoDB', methods=['GET'])
+def clear_user_history_from_mongoDB():
+    '''
+    Clears the user's search history from MongoDB.
+
+    Parameters:
+        user_name (str): The user's name.
+
+    Returns:
+        JSON response indicating success or failure.
+    '''
+    user_name = request.args.get('user_name')
+    db = MongoClient(MONGO_STR)['user_management']
+    collection = db['users']
+    user = collection.find_one({'user_name': user_name})
+    if user is None:
+        return jsonify({'success': False, 'message': 'User does not exist'}), 400
+    
+    collection.update_one({'user_name': user_name}, {'$set': {'user_preference_history': {}}})
+    return jsonify({'success': True}), 200

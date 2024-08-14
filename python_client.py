@@ -52,7 +52,7 @@ class Client:
         self.login(user_name, user_password)
         return response.json()['success']
 
-    def remove_user(self, user_name: str, user_password: str) -> dict:
+    def remove_user(self) -> dict:
         """
         Removes a user from the database.
         
@@ -60,7 +60,7 @@ class Client:
             True : if the user was removed successfully.
             False : if the user name does not exist or failed to remove.
         """
-        response = requests.post(f"{SERVER_URL}/remove_user_from_mongoDB", json={"user_name": user_name, "user_password": user_password})
+        response = requests.post(f"{SERVER_URL}/remove_user_from_mongoDB", json={"user_name": self.user_name, "user_password": self.user_password})
         return response.json()['success']
 
     def store_preference_to_history(self):
@@ -90,7 +90,7 @@ class Client:
 
 
     
-    def get_movie_recommendations(self, user_input, poster_image_size=500) -> list[dict]:
+    def get_movie_recommendations(self, user_input, poster_image_size=500, store_data=True) -> list[dict]:
         """
         Fetch movie recommendations based on user input.
 
@@ -203,7 +203,8 @@ class Client:
         """
         #TODO: Add a list of main actors cast to the output
         
-        self.store_input_to_history(user_input)
+        if store_data:
+            self.store_input_to_history(user_input)
 
         url = f"{SERVER_URL}/get_movie_recommendations"
         
@@ -329,8 +330,18 @@ class Client:
         for key in input.keys():
             # take the most common value
             prosessed_input[key] = max(input[key], key=input[key].get)
-        return self.get_movie_recommendations(prosessed_input)
+        return self.get_movie_recommendations(prosessed_input, store_data=False)
 
             
+    def clear_user_history_from_mongoDB(self) -> bool:
+        """
+        Clears the user's search history from MongoDB.
         
-        
+        Returns:
+            bool: True if the user's search history was cleared successfully.
+        """
+        url = f"{SERVER_URL}/clear_user_history_from_mongoDB"
+        response = requests.get(url, params={"user_name": self.user_name})
+        if response.status_code != 200:
+            return False
+        return True
