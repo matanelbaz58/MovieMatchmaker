@@ -7,6 +7,8 @@ import python_client
 import requests
 from PIL import Image, ImageTk
 from io import BytesIO
+import webbrowser
+
 
 USER_EXIST = [1,2]
 USER_DOES_NOT_EXIST = 0
@@ -115,6 +117,29 @@ def show_photo_from_url(url):
     label.image = photo  # Keep a reference to avoid garbage collection
     label.pack()
 
+def open_movie_info(movie):
+    if movie:
+        # Extract the title from the movie dictionary
+        title = movie.get('title', 'Unknown Title')
+        # Extract other relevant information if needed
+        overview = movie.get('overview', 'No description available.')
+        release_date = movie.get('release_date', 'Unknown release date')
+        
+        # Create a new window to display the movie information
+        info_window = tk.Toplevel()
+        info_window.title(f"Movie Info: {title}")
+        info_window.geometry("400x300")
+        
+        # Display the movie information in the window
+        ttk.Label(info_window, text=f"Title: {title}", font=("Helvetica", 14, "bold")).pack(anchor='w', padx=10, pady=5)
+        ttk.Label(info_window, text=f"Overview: {overview}", wraplength=380).pack(anchor='w', padx=10, pady=5)
+        ttk.Label(info_window, text=f"Release Date: {release_date}").pack(anchor='w', padx=10, pady=5)
+        
+        # Optionally, you can add more details or styling as needed
+        
+    else:
+        print("Invalid movie data: None")
+        
 def show_recommendations(rc):
     # Create a new window to display the movie recommendations
     recommendations_window = tk.Toplevel()
@@ -130,14 +155,18 @@ def show_recommendations(rc):
         for i, movie in enumerate(rc[:num_loops]):  
             movie_title = movie.get('title', 'Unknown Title')
             movie_image_url = movie.get('poster_url', None)
+            movie_info_url = movie.get('info_url', None)  # Assuming 'info_url' is the key for the movie information URL
 
             # Display the movie title as a button
             button = ttk.Button(recommendations_window, text=f"{i+1}. {movie_title}", command=lambda url=movie_image_url: show_photo_from_url(url))
             button.pack(anchor='w', padx=10, pady=5)
+
+            # Display the movie information link as a button
+            info_button = ttk.Button(recommendations_window, text="More Info", command=lambda movie=movie: open_movie_info(movie))
+            info_button.pack(anchor='w', padx=10, pady=5)
        
     else:
         ttk.Label(recommendations_window, text="No recommendations available.").pack(anchor='center', padx=10, pady=10)
-
 
 def setup_login_frame(root):
     # Create the login frame with entry fields for username and password
@@ -207,7 +236,6 @@ def main():
     setup_login_frame(root)
     setup_registration_frame(root)
     setup_recommendation_frame(root)
-
     show_login_frame()
     root.mainloop()
 
