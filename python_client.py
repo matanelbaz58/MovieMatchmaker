@@ -1,3 +1,4 @@
+from typing import List, Tuple
 import requests
 from web3_utils import Web3UserHistoryHandler
 
@@ -121,7 +122,7 @@ class Client:
         return user_input
 
     
-    def get_movie_recommendations(self, user_input, poster_image_size=500, store_data=True) -> list[dict]:
+    def get_movie_recommendations(self, user_input, poster_image_size=500, store_data=True) -> Tuple[List[dict], str]:
         """
         Fetch movie recommendations based on user input.
 
@@ -233,9 +234,8 @@ class Client:
             root.mainloop()
         """
         #TODO: Add a list of main actors cast to the output
-    
         if store_data:
-            self.store_input_to_history(user_input)
+            tx_hash = self.store_input_to_history(user_input)
 
         user_input = self.prase_user_input_to_tmdb_format(user_input)
         url = f"{SERVER_URL}/get_movie_recommendations"
@@ -245,8 +245,11 @@ class Client:
             return response
         else:
             data = response.json()['results'][:10]           
-            return [self.format_tmdb_results(movie_dict, poster_image_size) for movie_dict in data]
-    
+            movie_resaults = [self.format_tmdb_results(movie_dict, poster_image_size) for movie_dict in data]
+            if not self.is_MongoDB_client() and store_data:
+                return movie_resaults, tx_hash
+            return movie_resaults
+                
         
     def format_tmdb_results(self, data: dict, poster_image_size) -> dict:
         """
@@ -333,16 +336,34 @@ class Client:
             return None
         return response.json()
     
-    def store_input_to_history(self, user_input: dict) -> bool:
+
+    def update_user_preferences(self, user_input: dict, user_history: dict) -> dict:
+
+        for key, value in user_input.items():
+            if key not in user_history:
+                user_history[key] = {value: 1}
+            elif value not in user_history[key]:
+                user_history[key][value] = 1
+            else:
+                user_history[key][value] += 1
+        return user_history
+
+    def store_input_to_history(self, user_input: dict) -> bool | str:
         """
         Stores the user's search history in MongoDB.
         """
         # TODO: make sure language is stored correctly
-        url = f"{SERVER_URL}/store_user_to_mongoDB_history"
-        response = requests.post(url, json={"user_input": user_input, "user_name": self.public_identifier})
-        if response.status_code != 200:
-            return False
-        return True
+        
+        user_history = self.get_user_history()
+        updated_user_history = self.update_user_preferences(user_input, user_history)
+
+        
+        if self.is_MongoDB_client():
+            url = f"{SERVER_URL}/store_user_to_mongoDB_history"
+            response = requests.post(url, json={"updated_user_history": updated_user_history, "user_name": self.public_identifier})
+            return response.status_code == 200
+        return self.web3_history_manager.update_user_history(user_input, self.public_identifier, self.private_identifier)
+    
     
     def get_user_history(self) -> dict:
         """
@@ -351,12 +372,12 @@ class Client:
         Returns:
             dict: The user's search history.
         """
-        url = f"{SERVER_URL}/get_user_history_from_mongoDB"
-        response = requests.get(url, params={"user_name": self.public_identifier})
-        if response.status_code != 200:
-            return None
-        return response.json()
+        if self.is_MongoDB_client():
+            url = f"{SERVER_URL}/get_user_history_from_mongoDB"
+            response = requests.get(url, params={"user_name": self.public_identifier})
+            return response.json() if response.status_code == 200 else None
         
+        return self.web3_history_manager.get_user_history(self.public_identifier)
 
     def get_movie_recommendations_by_histoy(self):
         """

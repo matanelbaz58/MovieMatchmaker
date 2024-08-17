@@ -54,7 +54,7 @@ def register():
     if user is not None:
         return jsonify({'success': False, 'message': 'User name already exists'}), 400
     
-    collection.insert_one({'user_name': user_name, 'password': password_hash})            
+    collection.insert_one({'user_name': user_name, 'password': password_hash, 'user_preference_history': {}})            
     user = collection.find_one({'user_name': user_name})
     return jsonify({'success': user is not None}), 201
 
@@ -267,7 +267,7 @@ def store_user_to_mongoDB_history():
         JSON response indicating success or failure.
     """
     user_name = request.json.get('user_name')
-    user_input = request.json.get('user_input')
+    updated_user_history = request.json.get('updated_user_history')
 
     db = MongoClient(MONGO_STR)['user_management']
     collection = db['users']
@@ -279,19 +279,9 @@ def store_user_to_mongoDB_history():
     if 'user_preference_history' not in user.keys():
         user['user_preference_history'] = {}
 
-    history_dict = user['user_preference_history']
-
-    for key, value in user_input.items():
-        if key not in history_dict:
-            history_dict[key] = {value: 1}
-        elif value not in history_dict[key]:
-            history_dict[key][value] = 1
-        else:
-            history_dict[key][value] += 1
-
     collection.update_one(
         {'user_name': user_name},
-        {'$set': {'user_preference_history': history_dict}}
+        {'$set': {'user_preference_history': updated_user_history}}
     )
 
     return jsonify({'success': True}), 200
