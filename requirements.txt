@@ -3,3 +3,4 @@ pymongo
 requests
 web3
 tkinter
+pytest
