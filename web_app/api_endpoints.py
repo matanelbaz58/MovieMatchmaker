@@ -2,11 +2,14 @@ import hashlib
 from flask import Blueprint, request, jsonify
 import requests
 from pymongo import MongoClient
+from web3 import Web3
 
-ABI = '[{"inputs":[],"name":"num","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"person","outputs":[{"internalType":"uint256","name":"num","type":"uint256"},{"internalType":"string","name":"name","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"retrive","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_num","type":"uint256"}],"name":"store","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stru","outputs":[{"internalType":"uint256","name":"num","type":"uint256"},{"internalType":"string","name":"name","type":"string"}],"stateMutability":"view","type":"function"}]'
 MONGO_STR = "mongodb+srv://simmeryaniv:gSNjq96LSO7IMxt6@moviematchmakerdb.ql3efn4.mongodb.net/"
 TMDB_API_KEY = "bf2a409e2a9c66f245a0b3d223179222"
 TMDB_BASE_URL = 'https://api.themoviedb.org/3'
+ETHERSCAN_API_KEY = 'FFSTMK324RTQAE1DI3935W2RAYHQX32DRI'
+ETHERSCAN_API_ENDPOINT = 'https://api-sepolia.etherscan.io/api'
+
 api_endpoints = Blueprint('api_endpoints', __name__)
 
 
@@ -333,3 +336,22 @@ def clear_user_history_from_mongoDB():
     
     collection.update_one({'user_name': user_name}, {'$set': {'user_preference_history': {}}})
     return jsonify({'success': True}), 200
+
+
+@api_endpoints.route('/get_contract_abi', methods=['GET'])
+def get_contract_abi():
+    '''
+    Fetches the ABI of the smart contract.
+
+    Returns:
+        JSON response containing the ABI.
+    '''
+    contract_address = request.args.get('contract_address')
+    
+    response = requests.get(ETHERSCAN_API_ENDPOINT, params={
+            "module": "contract",
+            "action": "getabi",
+            "address": contract_address,
+            "apikey": ETHERSCAN_API_KEY
+    }) 
+    return jsonify(response.json()['result']), 200 if response.status_code == 200 else None
