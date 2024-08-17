@@ -4,7 +4,7 @@ import json
 from eth_account.messages import encode_defunct
 
 SERVER_URL = 'http://localhost:5000'
-CONTRACT_ADDRESS = '0x158ca7e48d81031f9fF65425b4B084ECd1853107'
+CONTRACT_ADDRESS = '0xc4311656c7e3164a05fb13a6E395872d4412b78b'
 SEPOLIA_API_KEY = 'a32106b340fb4f1aa81105e66a70b2ff' #TODO: is this the right place to put the api key??
 
 class Web3UserHistoryHandler:
@@ -58,41 +58,35 @@ class Web3UserHistoryHandler:
         return response.json() if response.status_code == 200 else ''
         
         
-    def get_user_history(self):
-        user_data = self.contract_instance.functions.retrieveData().call()
-        return user_data #TODO: Parse the user data and return it as a dictionary
+    def get_user_history(self, account_address: str) -> dict:
+        if not self.contract_instance.functions.addressExists(account_address).call():
+            return None
+        user_data_bytes = self.contract_instance.functions.retrieveData().call({'from': account_address})
+        user_data = json.loads(user_data_bytes.decode('utf-8'))
+        return user_data 
     
 
-    def update_user_history(self, user_data: dict):
+    def update_user_history(self, user_data: dict, account_address: str, private_key: str) -> str:
         """
-        Updates the user's history on the blockchain by storing the provided user data.
 
-        This function interacts with a smart contract to store user data. It estimates the gas required for the transaction,
-        retrieves the current nonce for the wallet address, builds the transaction, signs it with the wallet's private key,
-        and sends the signed transaction to the blockchain. Finally, it waits for the transaction receipt and returns the
-        transaction hash.
-
-        Args:
-            user_data (dict): A dictionary containing the user data to be stored on the blockchain.
-
-        Returns:
-            str: The transaction hash of the completed transaction.
-
-        Raises:
-            ValueError: If there is an error in the transaction process.
         """
-        #TODO: change user_data to a string before storing it on the blockchain
-        tx_function = self.contract_instance.functions.storeData(user_data)
-        gas_estimate = tx_function.estimateGas({'from': self.wallet_address})
-        nonce = self.web3_connection.eth.getTransactionCount(self.wallet_address)
-        tx = tx_function.buildTransaction({
+        data_bytes = json.dumps(user_data).encode('utf-8')
+        tx_function = self.contract_instance.functions.storeData(data_bytes)
+
+        # Prepare the transaction that will store data
+        store_txn = tx_function.build_transaction({
             'chainId': self.web3_connection.eth.chain_id,
-            'gas': gas_estimate,
-            'nonce': nonce,
+            'from': account_address,
+            'nonce': self.web3_connection.eth.get_transaction_count(account_address),
+            'gas': tx_function.estimate_gas({'from': account_address}),
         })
-        signed_tx = self.web3_connection.eth.account.signTransaction(tx, self.wallet_private_key)
-        tx_hash = self.web3_connection.eth.sendRawTransaction(signed_tx.rawTransaction)
-        tx_receipt = self.web3_connection.eth.waitForTransactionReceipt(tx_hash)
+
+        signed_tx = self.web3_connection.eth.account.sign_transaction(store_txn, private_key)
+        tx_hash = self.web3_connection.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_receipt = self.web3_connection.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"\n\n\nTransaction successful with hash: \n\n\n{tx_receipt.transactionHash.hex()}\n\n\n")
+
+        print(f"Transaction full receipt:\n\n\n {tx_receipt}\n\n\n")
         return tx_receipt.transactionHash.hex()
 
 
@@ -140,11 +134,12 @@ class Web3UserHistoryHandler:
 # # Initialize contract
 # contract = w3.eth.contract(address=contract_address, abi=contract_abi)
 
-# Example of reading from the contract (a public variable or a function that doesn't change state)
-# Replace 'example_read_function' with your actual function name
+# #Example of reading from the contract (a public variable or a function that doesn't change state)
+# #Replace 'example_read_function' with your actual function name
 # read_result = contract.functions.retrive().call()
 # print(f"Read Result: {read_result}")
 # print("\n\n\n---------------------------------------------------\n\n\n")
+
 # # Example of writing to the contract (requires a transaction)
 # # Replace 'example_write_function' and 'FUNCTION_ARGUMENTS' with your actual function and arguments
 # tx_function = contract.functions.store (0x6057361d)(121234)
