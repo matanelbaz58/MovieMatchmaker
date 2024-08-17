@@ -228,7 +228,7 @@ def setup_recommendation_frame(root):
 def main():
     # Create the main window and set up the frames
     global user_object
-    user_object = python_client.Client(isMongoDBClient=True)
+    user_object = python_client.Client(is_mongo_db_client=True)
     root = tk.Tk()
     root.title("Movie Recommendation App")
     root.geometry("600x400")
