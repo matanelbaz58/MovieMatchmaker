@@ -1,5 +1,5 @@
 import requests
-
+from web3_utils import Web3UserHistoryHandler
 
 SERVER_URL = "http://localhost:5000"
 TMDB_URL = "https://api.themoviedb.org/3"
@@ -8,15 +8,19 @@ SORT_BY_OPTIONS = {'popularity' : 'popularity.desc', 'release date' : 'releaseda
 
 
 class Client:
-    def __init__(self, isMongoDBClient: bool):
-        self.user_name = None
-        self.user_password = None
-        self.wallet_address = None
+    def __init__(self, is_mongo_db_client: bool, wallet_address: str = None, wallet_private_key: str = None):    
+        self.public_identifier = None
+        self.private_identifier = None
         self.genre_dict = self.get_genre_dict()
         self.language_dict = self.get_language_dict()
-        #self.search_history_manager = MongoDBClient if isMongoDBClient else Web3HistoryManager
+        self.web3_history_manager = Web3UserHistoryHandler() if not is_mongo_db_client else None
 
-    def login(self, user_name: str, user_password: str) -> int:
+    
+    def is_MongoDB_client(self):
+        return self.web3_history_manager == None
+
+
+    def login(self, public_identifier: str, private_identifier: str) -> int:
         """
         Logs in the user.
 
@@ -27,47 +31,55 @@ class Client:
         Returns:
             0 (int): if the user name does not exist.
             1 (int): if the user was logged in successfully.
-            2 (int): if the password is incorrect.
+            2 (int): if the password is incorrect. 
+            **Note:** in case of a web3 client, 2 is returned if the wallet address or private key are incorrect.
+            
         """
-        response = requests.post(f"{SERVER_URL}/login_mongoDB", json={"user_name": user_name, "user_password": user_password})
-        if response.status_code == 400:
-            return 0
-        elif response.status_code == 401:
-            return 2
-        elif response.status_code == 200:
-            self.user_name = user_name
-            self.user_password = user_password
-            return 1
-
-
-    def register_user(self, user_name: str, user_password: str) -> dict:
-        """
-        Registers a new user in the database and logs them in.
+        if self.is_MongoDB_client():
+            response = requests.post(f"{SERVER_URL}/login_mongoDB", json={"user_name": public_identifier, "user_password": private_identifier})
+            if response.status_code == 400:
+                return 0
+            elif response.status_code == 401:
+                return 2
+            elif response.status_code == 200:
+                self.public_identifier = public_identifier
+                self.private_identifier = private_identifier
+                return 1
         
-        Returns:
-            True : if the user was added successfully.
-            False : if the user name already exists or failed to add.
+        if self.web3_history_manager.authenticate_wallet(public_identifier, private_identifier):
+            self.public_identifier = public_identifier
+            self.private_identifier = private_identifier
+            return 1
+        
+        return 2
+
+
+    def register_user(self, public_identifier: str, private_identifier: str) -> bool:
         """
-        response = requests.post(f"{SERVER_URL}/register_mongoDB", json={"user_name": user_name, "user_password": user_password})
-        self.login(user_name, user_password)
-        return response.json()['success']
+        
+        """
+        #TODO: return rc indicating the reason for failure
+        if self.is_MongoDB_client():
+            response = requests.post(f"{SERVER_URL}/register_mongoDB", json={"user_name": public_identifier, "user_password": private_identifier})
+            self.login(public_identifier, private_identifier)
+            return response.json()['success']
+        else:
+            return self.login(public_identifier, private_identifier) == 1
+        
 
     def remove_user(self) -> dict:
         """
         Removes a user from the database.
+        If the user is a web3 client, will return False anyway(user cannot be removed from the blockchain).
         
         Returns:
             True : if the user was removed successfully.
             False : if the user name does not exist or failed to remove.
         """
-        response = requests.post(f"{SERVER_URL}/remove_user_from_mongoDB", json={"user_name": self.user_name, "user_password": self.user_password})
+        if not self.is_MongoDB_client(): return False # User cannot be removed from the blockchain
+        response = requests.post(f"{SERVER_URL}/remove_user_from_mongoDB", json={"user_name": self.public_identifier, "user_password": self.private_identifier})
         return response.json()['success']
 
-    def store_preference_to_history(self):
-        """
-        Stores the user's search history in MongoDB.
-        """
-        pass
 
     def get_list_for_gui_dropdown(self, field: str) -> list:
         """
@@ -87,7 +99,26 @@ class Client:
         return sorted(switcher.get(field, []))
 
 
+    def prase_user_input_to_tmdb_format(self, user_input: dict) -> dict:
+        """
+        Prases user input to the format required by the TMDB API.
 
+        Args:
+            user_input (dict): A dictionary containing user preferences.
+
+        Returns:
+            dict: A dictionary containing user preferences in the format required by the TMDB API.
+        """
+        for key in user_input.keys():
+            if key == 'language':
+                user_input[key] = self.language_dict[user_input[key]]
+            if key == 'sort_by':
+                user_input[key] = SORT_BY_OPTIONS[user_input[key]]
+            if key == 'genre':
+                user_input[key] = self.genre_dict[user_input[key].capitalize()]
+            if key == 'with_cast':
+                user_input[key] = requests.get(f"{SERVER_URL}/get_cast_id_by_name", params={"actor_name": user_input[key]}).json()
+        return user_input
 
     
     def get_movie_recommendations(self, user_input, poster_image_size=500, store_data=True) -> list[dict]:
@@ -202,38 +233,47 @@ class Client:
             root.mainloop()
         """
         #TODO: Add a list of main actors cast to the output
-        
+    
         if store_data:
             self.store_input_to_history(user_input)
 
+        user_input = self.prase_user_input_to_tmdb_format(user_input)
         url = f"{SERVER_URL}/get_movie_recommendations"
-        
-        user_input['genre'] = self.genre_dict[user_input['genre'].capitalize()] if 'genre' in user_input else 28
-        user_input['language'] = [k for k, v in self.language_dict.items() if v == user_input['language']][0] if 'language' in user_input else 'en'
-        user_input['sort_by'] = SORT_BY_OPTIONS[user_input['sort_by']] if 'sort_by' in user_input else 'popularity.desc'
-        user_input['with_cast'] = requests.get(f"{SERVER_URL}/get_cast_id_by_name", params={"actor_name": user_input['with_cast']}).json() if 'with_cast' in user_input else ''
         response = requests.get(url, params=user_input)
 
         if response.status_code != 200:
             return response
         else:
             data = response.json()['results'][:10]           
-            return [self.process_movie_recommendations(movie_dict, poster_image_size) for movie_dict in data]
+            return [self.format_tmdb_results(movie_dict, poster_image_size) for movie_dict in data]
     
         
-    def process_movie_recommendations(self, data: dict, poster_image_size) -> dict:
-            keys_to_keep = ['backdrop_path', 'genre_ids', 'title', 'original_language', 'overview', 'popularity', 'poster_path', 'release_date']
-            
-            poster_url = f"https://image.tmdb.org/t/p/w{poster_image_size}{data['poster_path']}" if 'poster_path' in data else None
-            
-            return {
-                key: (
-                    requests.get(poster_url).content if key == 'poster_path' else
-                    [k for k, v in self.genre_dict.items() if v in data[key]] if key == 'genre_ids' else
-                    data[key]
-                )
-                for key in keys_to_keep if key in data
-            } | {'poster_url': poster_url}  
+    def format_tmdb_results(self, data: dict, poster_image_size) -> dict:
+        """
+        Formats the data fetched from the TMDB API.
+
+        Parameters:
+            data (dict): A dictionary containing movie data fetched from the TMDB API.
+            poster_image_size (int): The size of the poster image to fetch.
+
+        Returns:
+            dict: A dictionary containing formatted movie data.
+        """
+        keys_to_keep = ['backdrop_path', 'genre_ids', 'title', 'original_language', 'overview', 'popularity', 'poster_path', 'release_date']
+        
+        return_dict = {}
+        for key in keys_to_keep:
+            if key == 'poster_path':
+                return_dict['poster_url'] =  f"https://image.tmdb.org/t/p/w{poster_image_size}{data['poster_path']}"    
+            elif key == 'genre_ids':
+                return_dict[key] = [k for k, v in self.genre_dict.items() if v in data[key]]
+            elif key == 'language':
+                return_dict[key] = self.language_dict[data[key]]
+            else:
+                return_dict[key] = data[key]
+                
+        return return_dict
+ 
             
 
     def get_genre_dict(self) -> dict[str, int]:
@@ -297,9 +337,9 @@ class Client:
         """
         Stores the user's search history in MongoDB.
         """
-        
+        # TODO: make sure language is stored correctly
         url = f"{SERVER_URL}/store_user_to_mongoDB_history"
-        response = requests.post(url, json={"user_input": user_input, "user_name": self.user_name})
+        response = requests.post(url, json={"user_input": user_input, "user_name": self.public_identifier})
         if response.status_code != 200:
             return False
         return True
@@ -312,7 +352,7 @@ class Client:
             dict: The user's search history.
         """
         url = f"{SERVER_URL}/get_user_history_from_mongoDB"
-        response = requests.get(url, params={"user_name": self.user_name})
+        response = requests.get(url, params={"user_name": self.public_identifier})
         if response.status_code != 200:
             return None
         return response.json()
@@ -341,7 +381,7 @@ class Client:
             bool: True if the user's search history was cleared successfully.
         """
         url = f"{SERVER_URL}/clear_user_history_from_mongoDB"
-        response = requests.get(url, params={"user_name": self.user_name})
+        response = requests.get(url, params={"user_name": self.public_identifier})
         if response.status_code != 200:
             return False
         return True
