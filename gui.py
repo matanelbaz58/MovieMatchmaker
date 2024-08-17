@@ -112,7 +112,10 @@ def get_movie_recommendations(entries):
     else:
         messagebox.showinfo("Success", "Movie recommendations fetched successfully.")
         # Show the recommendations in a new window
-        show_recommendations(rc)
+        if user_object.is_MongoDB_client():
+            show_recommendations(rc)
+        else:
+            show_recommendations(rc,tx_hash_link)
 
 def show_photo_from_url(url):
     # Create a new window to display the movie image
@@ -157,7 +160,7 @@ def open_movie_info(movie):
     else:
         print("Invalid movie data: None")
         
-def show_recommendations(rc):
+def show_recommendations(rc,tx_hash_link=None):
     # Create a new window to display the movie recommendations
     recommendations_window = tk.Toplevel()
     recommendations_window.title("Movie Recommendations")
@@ -184,6 +187,11 @@ def show_recommendations(rc):
        
     else:
         ttk.Label(recommendations_window, text="No recommendations available.").pack(anchor='center', padx=10, pady=10)
+    
+    # Add a button for tx_hash_link if provided
+    if tx_hash_link:
+        tx_button = ttk.Button(recommendations_window, text="Transaction Link", command=lambda: open_tx_link(tx_hash_link))
+        tx_button.pack(anchor='center', padx=10, pady=10)
 
 def setup_login_frame(root):
     # Create the login frame with entry fields for username and password
