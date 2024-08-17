@@ -19,9 +19,7 @@ def test_direct_api_calls(use_cache):
     assert client.get_list_for_gui_dropdown('genre') == sorted(list(GENRE_LIST.keys()))
     assert client.get_list_for_gui_dropdown('sort_by') == ['popularity', 'release date', 'vote average']
    
-    movie_recomend = client.get_movie_recommendations(user_input={'language': 'English', 'genre': 'Comedy', 'with_cast': 'Tom Cruise'})
-    assert type(movie_recomend) == list
-    assert len(movie_recomend) == 10
+
     
 
 @pytest.mark.parametrize("use_cache", [True, False])
@@ -44,14 +42,13 @@ def test_get_requests_from_server(use_cache):
 
     # Web3 test case
     (False, 
-     ('0x5441f3581Ba3c9193832Bb5b2c44487E4BB0190B', '7adf8381908aee6ee141616efb1f74a5f76278f66a1a83b1178e364db0d3969a'), 
-     [('0x5551f3581Ba3c9193832Bb5b2c44487E5BB0190B', '7bdf8381908bee6ee141616efb1f74b5f76278f66b1a83b1178e364db0d3969b', 2), 
-      ('0x5441f3581Ba3c9193832Bb5b2c44487E4BB0190B', '7bdf8381908bee6ee141616efb1f74b5f76278f66b1a83b1178e364db0d3969a', 2), 
-      ('0x5441f3581Ba3c9193832Bb5b2c44487E4BB0190B', '7adf8381908aee6ee141616efb1f74a5f76278f66a1a83b1178e364db0d3969a', 1)], 
+     ('0x5441f3581Ba3c9193832Bb5b2c44487E4BB0190B', '7adf8381908aee6ee141616efb1f74a5f76278f66a1a83b1178e364db0d3969a'), # Correct credentials
+     [('0x5551f3581Ba3c9193832Bb5b2c44487E5BB0190B', '7bdf8381908bee6ee141616efb1f74b5f76278f66b1a83b1178e364db0d3969b', 2), # Wrong address
+      ('0x5441f3581Ba3c9193832Bb5b2c44487E4BB0190B', '7bdf8381908bee6ee141616efb1f74b5f76278f66b1a83b1178e364db0d3969a', 2), # Wrong private key
+      ('0x5441f3581Ba3c9193832Bb5b2c44487E4BB0190B', '7adf8381908aee6ee141616efb1f74a5f76278f66a1a83b1178e364db0d3969a', 1)], # Correct credentials
      False,
      True)  # Duplicate registration should not fail for Web3
 ])
-
 def test_authentication(is_mongo_db_client, register_data, login_data, expected_login_results, allow_duplicate_registration):
     '''
     Test user registration, login, and removal for both MongoDB and Web3 clients.
@@ -86,26 +83,65 @@ def test_user_history():
     '''
     test the user history
     '''
+    # TODO: test getting recommendations by history before adding any history
+
     client = Client(True)
     client.register_user('test_user', 'test_password')
-    assert client.get_user_history() == None
-    client.get_movie_recommendations(user_input={'language': 'English', 'genre': 'Comedy', 'with_cast': 'Tom Cruise'}) 
+    assert client.get_user_history() == {}
+    movie_recomend = client.get_movie_recommendations(user_input={'language': 'English', 'genre': 'Comedy', 'with_cast': 'Tom Cruise'}) 
+    assert type(movie_recomend) == list
+    assert len(movie_recomend) == 10
+
     assert client.get_user_history() == {'language': {'English': 1}, 'genre': {'Comedy': 1}, 'with_cast': {'Tom Cruise': 1}}
     client.get_movie_recommendations(user_input={'language': 'English', 'genre': 'Comedy', 'with_cast': 'Leonardo DiCaprio'})
     assert client.get_user_history() == {'language': {'English': 2}, 'genre': {'Comedy': 2}, 'with_cast': {'Tom Cruise': 1, 'Leonardo DiCaprio': 1}}
-    client.get_movie_recommendations(user_input={'with_cast': 'Tom Cruise'})
-    assert client.get_user_history() == {'language': {'English': 2}, 'genre': {'Comedy': 2}, 'with_cast': {'Tom Cruise': 2, 'Leonardo DiCaprio': 1}}
+    client.get_movie_recommendations(user_input={'with_cast': 'Tom Cruise', 'sort_by': 'popularity'})
+    assert client.get_user_history() == {'language': {'English': 2}, 'genre': {'Comedy': 2}, 'with_cast': {'Tom Cruise': 2, 'Leonardo DiCaprio': 1}, 'sort_by': {'popularity': 1}}
     
     movie_recomend = client.get_movie_recommendations_by_histoy()
     assert type(movie_recomend) == list
     assert len(movie_recomend) == 10
 
-    client.clear_user_history_from_mongoDB()
+    client.clear_user_history()
     assert client.get_user_history() == {}
 
     client.remove_user()
 
 
+def test_web3_history():
+    '''
+    test the user history
+    '''
+    wallet_address = '0x5441f3581Ba3c9193832Bb5b2c44487E4BB0190B'
+    private_key = '7adf8381908aee6ee141616efb1f74a5f76278f66a1a83b1178e364db0d3969a'
+    
+    client = Client(is_mongo_db_client=False)
+    client.login(wallet_address, private_key)
+    
+    client.clear_user_history()
+    assert client.get_user_history() == {}
+
+    movie_resaults, tx_hash_link = client.get_movie_recommendations(user_input={'language': 'English', 'genre': 'Comedy', 'with_cast': 'Tom Cruise'}) 
+    print(tx_hash_link)
+    assert client.get_user_history() == {'language': {'English': 1}, 'genre': {'Comedy': 1}, 'with_cast': {'Tom Cruise': 1}}
+    movie_resaults, tx_hash_link = client.get_movie_recommendations(user_input={'language': 'English', 'genre': 'Comedy', 'with_cast': 'Leonardo DiCaprio', 'sort_by': 'popularity'})
+    assert client.get_user_history() == {'language': {'English': 2}, 'genre': {'Comedy': 2}, 'with_cast': {'Tom Cruise': 1, 'Leonardo DiCaprio': 1}, 'sort_by': {'popularity': 1}}
+    
+    assert type(movie_resaults) == list
+    assert len(movie_resaults) == 10
+
+    assert type(tx_hash_link) == str
+    assert len(tx_hash_link) == 98
+    assert tx_hash_link[:34] == 'https://sepolia.etherscan.io/tx/0x'
+
+    movie_recomend = client.get_movie_recommendations_by_histoy() 
+    assert type(movie_recomend) == list
+    assert len(movie_recomend) == 10
+
+    client.clear_user_history()
+    assert client.get_user_history() == {}
+
+    assert client.remove_user() == False
 
     
 
@@ -117,14 +153,12 @@ if __name__ == '__main__':
     # pytest.main(['-k', 'test_get_requests_from_server'])
     # pytest.main(['-k', 'test_authentication'])
     # pytest.main(['-k', 'test_user_history'])
+    # pytest.main(['-k', 'test_web3_history'])
+
+    # test_web3_history()
+    # test_web3_history()
+
     pytest.main()
     
     
     
-    #print(Client(True).get_list_for_gui_dropdown('language'))
-    # c =Client(True)
-    # c.register_user('test_user', 'test_password')
-    # #c.login('test_user', 'test_password')
-    # c.get_movie_recommendations(user_input={'language': 'English', 'genre': 'Comedy', 'with_cast': 'Tom Cruise'})
-    # #print(c.get_user_history())
-    # print(c.get_movie_recommendations_by_histoy())
