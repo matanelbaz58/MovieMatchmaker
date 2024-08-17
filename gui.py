@@ -40,12 +40,10 @@ def register():
         return
 
 def login():
-    messagebox.showinfo("Success", "Logged in successfully.")
-    show_recommendation_frame()
-    return
+
     # Get the username and password from the entry fields
-    username = username_entry.get()
-    password = password_entry.get()
+    username = "m"
+    password = "m"
 
     rc = user_object.login(username, password)   
 
@@ -77,8 +75,24 @@ def show_recommendation_frame():
     recommendation_frame.pack()
 
 def submit(entries):
-    # Get the movie name and year from the entry fields and query the movie data
+    # Get movie recommendations based on the user's input
     get_movie_recommendations(entries)
+
+def recommendations_by_history(entries):
+    # Get movie recommendations based on the history of the user
+    get_movie_recommendations_by_histoy(entries)
+
+def get_movie_recommendations_by_histoy(entries):
+    # 
+    rc = user_object.get_movie_recommendations_by_histoy()
+    
+    if rc is None:
+        messagebox.showerror("Error", "Failed to fetch movie recommendations.")
+    else:
+        messagebox.showinfo("Success", "Movie recommendations fetched successfully.")
+        # Show the recommendations in a new window
+        show_recommendations(rc)
+ 
 
 def get_movie_recommendations(entries):
     # Collect all the fields from the entries dictionary
@@ -99,7 +113,7 @@ def get_movie_recommendations(entries):
         messagebox.showinfo("Success", "Movie recommendations fetched successfully.")
         # Show the recommendations in a new window
         show_recommendations(rc)
-        user_object.store_preference_to_history()
+
 def show_photo_from_url(url):
     # Create a new window to display the movie image
     image_window = tk.Toplevel()
@@ -226,7 +240,9 @@ def setup_recommendation_frame(root):
 
     submit_button = ttk.Button(recommendation_frame, text="Submit", command=lambda: submit(entries))
     submit_button.grid(row=len(options) + 1, column=0, columnspan=2)
-
+    
+    recommendations_by_history_button = ttk.Button(recommendation_frame, text="Recommendations by History", command=lambda: recommendations_by_history(entries))
+    recommendations_by_history_button.grid(row=len(options) + 2, column=0, columnspan=2)
 
 def main():
     # Create the main window and set up the frames
