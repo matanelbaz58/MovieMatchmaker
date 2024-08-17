@@ -344,4 +344,6 @@ def get_contract_abi():
             "address": contract_address,
             "apikey": ETHERSCAN_API_KEY
     }) 
+
+    print(response.json())
     return jsonify(response.json()['result']), 200 if response.status_code == 200 else None

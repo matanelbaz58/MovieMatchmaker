@@ -88,8 +88,11 @@ def get_movie_recommendations(entries):
     print("Query Parameters:", params)
     
     # Fetch movie recommendations using the collected parameters
-    rc = user_object.get_movie_recommendations(params)
-    
+    if user_object.is_MongoDB_client():
+        rc = user_object.get_movie_recommendations(params) 
+    else:
+        rc, tx_hash_link = user_object.get_movie_recommendations(params) # tx
+
     if rc is None:
         messagebox.showerror("Error", "Failed to fetch movie recommendations.")
     else:

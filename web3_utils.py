@@ -57,15 +57,13 @@ class Web3UserHistoryHandler:
         response = requests.get(f"{SERVER_URL}/get_contract_abi", params={'contract_address': CONTRACT_ADDRESS})
         return response.json() if response.status_code == 200 else ''
         
-        
     def get_user_history(self, account_address: str) -> dict:
         if not self.contract_instance.functions.addressExists(account_address).call():
-            return None
+            return {}
         user_data_bytes = self.contract_instance.functions.retrieveData().call({'from': account_address})
         user_data = json.loads(user_data_bytes.decode('utf-8'))
         return user_data 
     
-
     def update_user_history(self, user_data: dict, account_address: str, private_key: str) -> str:
         """
 
@@ -84,12 +82,26 @@ class Web3UserHistoryHandler:
         signed_tx = self.web3_connection.eth.account.sign_transaction(store_txn, private_key)
         tx_hash = self.web3_connection.eth.send_raw_transaction(signed_tx.rawTransaction)
         tx_receipt = self.web3_connection.eth.wait_for_transaction_receipt(tx_hash)
-        print(f"\n\n\nTransaction successful with hash: \n\n\n{tx_receipt.transactionHash.hex()}\n\n\n")
 
-        print(f"Transaction full receipt:\n\n\n {tx_receipt}\n\n\n")
         return tx_receipt.transactionHash.hex()
 
+    def clear_user_history(self, account_address: str, private_key: str) -> str:
 
+        # Prepare the transaction
+        tx_function = self.contract_instance.functions.clearData()
+
+        clear_data_txn = tx_function.build_transaction({
+            'chainId': self.web3_connection.eth.chain_id,
+            'from': account_address,
+            'nonce': self.web3_connection.eth.get_transaction_count(account_address),
+            'gas': tx_function.estimate_gas({'from': account_address}),
+        })
+
+        
+        signed_tx = self.web3_connection.eth.account.sign_transaction(clear_data_txn, private_key)
+        tx_hash = self.web3_connection.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_receipt = self.web3_connection.eth.wait_for_transaction_receipt(tx_hash)
+        return tx_receipt.transactionHash.hex()
 
 
 

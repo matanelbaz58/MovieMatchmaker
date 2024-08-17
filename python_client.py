@@ -247,7 +247,7 @@ class Client:
             data = response.json()['results'][:10]           
             movie_resaults = [self.format_tmdb_results(movie_dict, poster_image_size) for movie_dict in data]
             if not self.is_MongoDB_client() and store_data:
-                return movie_resaults, tx_hash
+                return movie_resaults, f"https://sepolia.etherscan.io/tx/{tx_hash}"
             return movie_resaults
                 
         
@@ -362,7 +362,7 @@ class Client:
             url = f"{SERVER_URL}/store_user_to_mongoDB_history"
             response = requests.post(url, json={"updated_user_history": updated_user_history, "user_name": self.public_identifier})
             return response.status_code == 200
-        return self.web3_history_manager.update_user_history(user_input, self.public_identifier, self.private_identifier)
+        return self.web3_history_manager.update_user_history(updated_user_history, self.public_identifier, self.private_identifier)
     
     
     def get_user_history(self) -> dict:
@@ -394,15 +394,16 @@ class Client:
         return self.get_movie_recommendations(prosessed_input, store_data=False)
 
             
-    def clear_user_history_from_mongoDB(self) -> bool:
+    def clear_user_history(self) -> bool:
         """
         Clears the user's search history from MongoDB.
         
         Returns:
             bool: True if the user's search history was cleared successfully.
         """
-        url = f"{SERVER_URL}/clear_user_history_from_mongoDB"
-        response = requests.get(url, params={"user_name": self.public_identifier})
-        if response.status_code != 200:
-            return False
-        return True
+        if self.is_MongoDB_client():
+            url = f"{SERVER_URL}/clear_user_history_from_mongoDB"
+            response = requests.get(url, params={"user_name": self.public_identifier})
+            return response.status_code == 200
+        
+        return self.web3_history_manager.clear_user_history(self.public_identifier ,self.private_identifier)
