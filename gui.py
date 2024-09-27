@@ -26,8 +26,11 @@ def dropdown(name_field):
 def register():
     # Get the username and password from the entry fields
     username = new_username_entry.get()
-
     password = new_password_entry.get()
+    selected_option = option_combobox.get()
+
+    if selected_option == "address wallet":
+       user_object.change_date_base_to_web3()
 
     rc = user_object.register_user(username, password)
     
@@ -42,8 +45,8 @@ def register():
 def login():
 
     # Get the username and password from the entry fields
-    username = "m"
-    password = "m"
+    username = username_entry.get()
+    password = password_entry.get()
 
     rc = user_object.login(username, password)   
 
@@ -211,16 +214,27 @@ def setup_login_frame(root):
 
 def setup_registration_frame(root):
     # Create the registration frame with entry fields for new username and password
-    global registration_frame, new_username_entry, new_password_entry
+    global registration_frame, new_username_entry, new_password_entry, option_combobox
     registration_frame = ttk.Frame(root, padding="10 10 10 10")
-    ttk.Label(registration_frame, text="Choose a Username:").pack()
+    registration_frame.pack()
+
+    # Option to choose between 'address wallet' or 'mongo_db'
+    ttk.Label(registration_frame, text="Choose an option:").pack()
+    option_combobox = ttk.Combobox(registration_frame, values=["address wallet", "mongo_db"])
+    option_combobox.pack()
+    option_combobox.current(0)  # Set default selection
+
+    ttk.Label(registration_frame, text="Choose a user's name / wallet address:").pack()
     new_username_entry = ttk.Entry(registration_frame)
     new_username_entry.pack()
-    ttk.Label(registration_frame, text="Choose a Password:").pack()
+
+    ttk.Label(registration_frame, text="Choose a user's password / wallet private key:").pack()
     new_password_entry = ttk.Entry(registration_frame, show='*')
     new_password_entry.pack()
+
     register_new_button = ttk.Button(registration_frame, text="Register", command=register)
     register_new_button.pack()
+
     back_to_login_button = ttk.Button(registration_frame, text="Back to Login", command=show_login_frame)
     back_to_login_button.pack()
 

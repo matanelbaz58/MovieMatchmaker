@@ -18,14 +18,15 @@ class Client:
         self.web3_history_manager = Web3UserHistoryHandler() if not is_mongo_db_client else None
         #TODO: add monoDB self.history_manager session !
 
-    
+    def change_date_base_to_web3(self):
+        self.web3_history_manager = Web3UserHistoryHandler()
+
     def is_MongoDB_client(self):
         '''
         Returns:
             bool: True if the client is a MongoDB client, False if the client is a web3 client.
         '''
         return self.web3_history_manager == None
-
 
     def login(self, public_identifier: str, private_identifier: str) -> int:
         """
@@ -393,7 +394,7 @@ class Client:
         if self.is_MongoDB_client():
             url = f"{SERVER_URL}/get_user_history_from_mongoDB"
             response = requests.get(url, params={"user_name": self.public_identifier})
-            return response.json() if response.status_code == 200 else None
+            return response.json() if response.status_code == 200 else {}
         
         return self.web3_history_manager.get_user_history(self.public_identifier)
 
