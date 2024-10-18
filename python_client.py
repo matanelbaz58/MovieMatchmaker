@@ -68,25 +68,26 @@ class Client:
         return 2
 
 
-    def register_user(self, public_identifier: str, private_identifier: str) -> bool:
+    def register_user(self, public_identifier: str, private_identifier: str, user_type: str) -> bool:
         """
         Registers a new user. And logs in the user.
 
         Args:
             public_identifier (str): The user's name / wallet address.
             private_identifier (str): The user's password / wallet private key.
-
+            user_type (str): The type of the user. Options are: 'mongo_db', 'web3'
         Returns:
             bool: True if the user was registered successfully
         """
         #TODO: return rc indicating the reason for failure
-        if self.is_MongoDB:
+        if user_type == MONGO_DB:
             response = requests.post(f"{SERVER_URL}/register_mongoDB", json={"user_name": public_identifier,
                                                                              "user_password": private_identifier})
-            self.login(public_identifier, private_identifier)
+            self.login(public_identifier, private_identifier, user_type)
             return response.json()['success']
+        
         else:
-            return self.login(public_identifier, private_identifier) == 1
+            return self.login(public_identifier, private_identifier, user_type) == 1
         
 
     def remove_user(self) -> dict:

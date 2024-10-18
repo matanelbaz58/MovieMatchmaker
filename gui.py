@@ -31,10 +31,8 @@ def register():
     username = new_username_entry.get()
     password = new_password_entry.get()
     selected_option = option_combobox.get()
-    if selected_option == "address wallet":
-       user_object.change_date_base_to_web3()
 
-    rc = user_object.register_user(username, password)
+    rc = user_object.register_user(username, password, selected_option)
     
     if rc == True:
             messagebox.showinfo("Success", "User registered successfully.")
