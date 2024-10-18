@@ -7,7 +7,8 @@ TMDB_URL = "https://api.themoviedb.org/3"
 SEPOLIA_URL = "https://sepolia.etherscan.io/tx/"
 TMDB_AUTH_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiZjJhNDA5ZTJhOWM2NmYyNDVhMGIzZDIyMzE3OTIyMiIsInN1YiI6IjY1ZGNmMzUyOGMwYTQ4MDEzMTFkYTI0OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.1_XHPeZXtKSrozDmPcZKEaIbz4W5CpfloqD0l0LDLtY"
 SORT_BY_OPTIONS = {'popularity' : 'popularity.desc', 'release date' : 'releasedate.desc', 'vote average' : 'vote_average.desc'}
-
+ADDRESS_WALLET = "address wallet"
+MONGO_DB = "mongo_db"
 
 class Client:
     def __init__(self, is_mongo_db_client: bool, wallet_address: str = None, wallet_private_key: str = None):    
@@ -16,10 +17,12 @@ class Client:
         self.genre_dict = self.get_genre_dict()
         self.language_dict = self.get_language_dict()
         self.web3_history_manager = Web3UserHistoryHandler() if not is_mongo_db_client else None
+        self.is_MongoDB = is_mongo_db_client
         #TODO: add monoDB self.history_manager session !
 
     def change_date_base_to_web3(self):
         self.web3_history_manager = Web3UserHistoryHandler()
+        self.is_MongoDB = False
 
     def is_MongoDB_client(self):
         '''
@@ -28,7 +31,7 @@ class Client:
         '''
         return self.web3_history_manager == None
 
-    def login(self, public_identifier: str, private_identifier: str) -> int:
+    def login(self, public_identifier: str, private_identifier: str, user_type: str) -> int:
         """
         Logs in the user.
 
@@ -43,17 +46,20 @@ class Client:
             **Note:** in case of a web3 client, 2 is returned if the wallet address or private key are incorrect.
             
         """
-        if self.is_MongoDB_client():
+        if user_type == MONGO_DB:
             response = requests.post(f"{SERVER_URL}/login_mongoDB", json={"user_name": public_identifier, "user_password": private_identifier})
             if response.status_code == 400:
                 return 0
+            
             elif response.status_code == 401:
                 return 2
+            
             elif response.status_code == 200:
                 self.public_identifier = public_identifier
-                self.private_identifier = private_identifier
+                self.private_identifier = private_identifier    
                 return 1
-        
+
+        self.change_date_base_to_web3()
         if self.web3_history_manager.authenticate_wallet(public_identifier, private_identifier):
             self.public_identifier = public_identifier
             self.private_identifier = private_identifier
@@ -74,7 +80,7 @@ class Client:
             bool: True if the user was registered successfully
         """
         #TODO: return rc indicating the reason for failure
-        if self.is_MongoDB_client():
+        if self.is_MongoDB:
             response = requests.post(f"{SERVER_URL}/register_mongoDB", json={"user_name": public_identifier,
                                                                              "user_password": private_identifier})
             self.login(public_identifier, private_identifier)
@@ -92,7 +98,7 @@ class Client:
             True : if the user was removed successfully.
             False : if the user name does not exist or failed to remove.
         """
-        if not self.is_MongoDB_client():
+        if not self.is_MongoDB:
             self.clear_user_history() #TODO: test this on sys_test.pt
             return False 
         response = requests.post(f"{SERVER_URL}/remove_user_from_mongoDB", json={"user_name": self.public_identifier, "user_password": self.private_identifier})
@@ -110,9 +116,10 @@ class Client:
             list: A list of items for the dropdown menu.
         """
         switcher = {
-            'genre': list(self.genre_dict.keys()),
+            'with_genres': list(self.genre_dict.keys()),
             'language': list(self.language_dict.keys()),
-            'sort_by': list(SORT_BY_OPTIONS.keys())
+            'sort_by': list(SORT_BY_OPTIONS.keys()),
+            'year': [str(i) for i in range(1900, 2024)]
         }
         return sorted(switcher.get(field, []))
 
@@ -132,7 +139,7 @@ class Client:
                 user_input[key] = self.language_dict[user_input[key]]
             if key == 'sort_by':
                 user_input[key] = SORT_BY_OPTIONS[user_input[key]]
-            if key == 'genre':
+            if key == 'with_genres':
                 user_input[key] = self.genre_dict[user_input[key].capitalize()]
             if key == 'with_cast':
                 user_input[key] = requests.get(f"{SERVER_URL}/get_cast_id_by_name", params={"actor_name": user_input[key]}).json()
@@ -223,26 +230,29 @@ class Client:
             ],
             'https://sepolia.etherscan.io/tx/0x123456...')         
 
-              
+
         Example python usage:
             user_input = {'genre': 'Comedy', 'language': 'English'}
             recommendations = client.get_movie_recommendations(user_input)
         """
         #TODO: Add a list of main actors cast to the output
         if store_data:
-            tx_hash = self.store_input_to_history(user_input)
+            tx_hash = self.store_input_to_history(user_input.copy())
 
-        user_input = self.prase_user_input_to_tmdb_format(user_input)
+        user_input_prased = self.prase_user_input_to_tmdb_format(user_input.copy())
+        print(f"user_input_prased: {user_input_prased}")
         url = f"{SERVER_URL}/get_movie_recommendations"
-        response = requests.get(url, params=user_input)
+        response = requests.get(url, params=user_input_prased)
 
         if response.status_code != 200:
             return None
+        
         else:
             data = response.json()['results'][:10]           
             movie_resaults = [self.format_tmdb_results(movie_dict, poster_image_size) for movie_dict in data]
-            if not self.is_MongoDB_client() and store_data:
+            if not self.is_MongoDB and store_data:
                 return movie_resaults, SEPOLIA_URL + tx_hash 
+            
             return movie_resaults
                 
         
@@ -368,7 +378,7 @@ class Client:
         updated_user_history = self.update_user_preferences(user_input, user_history)
 
         
-        if self.is_MongoDB_client():
+        if self.is_MongoDB:
             url = f"{SERVER_URL}/store_user_to_mongoDB_history"
             response = requests.post(url, json={"updated_user_history": updated_user_history, "user_name": self.public_identifier})
             return response.status_code == 200
@@ -391,7 +401,7 @@ class Client:
                 'with_cast': {'Tom Cruise': 1}
             }
         """
-        if self.is_MongoDB_client():
+        if self.is_MongoDB:
             url = f"{SERVER_URL}/get_user_history_from_mongoDB"
             response = requests.get(url, params={"user_name": self.public_identifier})
             return response.json() if response.status_code == 200 else {}
@@ -422,7 +432,7 @@ class Client:
         Returns:
             bool: True if the user's search history was cleared successfully.
         """
-        if self.is_MongoDB_client():
+        if self.is_MongoDB:
             url = f"{SERVER_URL}/clear_user_history_from_mongoDB"
             response = requests.get(url, params={"user_name": self.public_identifier})
             return response.status_code == 200

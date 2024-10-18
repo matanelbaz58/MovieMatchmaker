@@ -22,13 +22,15 @@ users_file = 'users.json'
 def dropdown(name_field):
     # dropdown function
     return user_object.get_list_for_gui_dropdown(name_field)
-       
+
+def open_tx_link(tx_hash_link):
+        webbrowser.open(tx_hash_link)
+
 def register():
     # Get the username and password from the entry fields
     username = new_username_entry.get()
     password = new_password_entry.get()
     selected_option = option_combobox.get()
-
     if selected_option == "address wallet":
        user_object.change_date_base_to_web3()
 
@@ -47,8 +49,8 @@ def login():
     # Get the username and password from the entry fields
     username = username_entry.get()
     password = password_entry.get()
-
-    rc = user_object.login(username, password)   
+    selected_option = option_combobox_login.get()
+    rc = user_object.login(username, password, selected_option)   
 
     # Check if the username and password match
     if rc == USER_EXIST_AND_CORRECT_PASSWORD:
@@ -101,11 +103,8 @@ def get_movie_recommendations(entries):
     # Collect all the fields from the entries dictionary
     params = {field: entry.get() for field, entry in entries.items() if entry.get()}
     
-    # Print the collected parameters for debugging
-    print("Query Parameters:", params)
-    
     # Fetch movie recommendations using the collected parameters
-    if user_object.is_MongoDB_client():
+    if user_object.is_MongoDB:
         rc = user_object.get_movie_recommendations(params) 
     else:
         rc, tx_hash_link = user_object.get_movie_recommendations(params) # tx
@@ -115,7 +114,7 @@ def get_movie_recommendations(entries):
     else:
         messagebox.showinfo("Success", "Movie recommendations fetched successfully.")
         # Show the recommendations in a new window
-        if user_object.is_MongoDB_client():
+        if user_object.is_MongoDB:
             show_recommendations(rc)
         else:
             show_recommendations(rc,tx_hash_link)
@@ -173,7 +172,6 @@ def show_recommendations(rc,tx_hash_link=None):
     if isinstance(rc, list) and len(rc) > 0:
         # save the number of movies
         num_movies = len(rc)
-        print(f"Number of movies: {num_movies}")
         num_loops = 8 if num_movies >= 8 else num_movies
         for i, movie in enumerate(rc[:num_loops]):  
             movie_title = movie.get('title', 'Unknown Title')
@@ -198,12 +196,18 @@ def show_recommendations(rc,tx_hash_link=None):
 
 def setup_login_frame(root):
     # Create the login frame with entry fields for username and password
-    global login_frame, username_entry, password_entry
+    global login_frame, username_entry, password_entry, option_combobox_login
     login_frame = ttk.Frame(root, padding="10 10 10 10")
-    ttk.Label(login_frame, text="Username:").pack()
+
+    # Option to choose between 'address wallet' or 'mongo_db'
+    ttk.Label(login_frame, text="Choose an option:").pack()
+    option_combobox_login = ttk.Combobox(login_frame, values=["mongo_db", "address wallet"])
+    option_combobox_login.pack()
+
+    ttk.Label(login_frame, text="user's name / wallet address:").pack()
     username_entry = ttk.Entry(login_frame)
     username_entry.pack()
-    ttk.Label(login_frame, text="Password:").pack()
+    ttk.Label(login_frame, text="user's password / wallet private key:").pack()
     password_entry = ttk.Entry(login_frame, show='*')
     password_entry.pack()
     login_button = ttk.Button(login_frame, text="Login", command=login)
@@ -222,7 +226,7 @@ def setup_registration_frame(root):
     ttk.Label(registration_frame, text="Choose an option:").pack()
     option_combobox = ttk.Combobox(registration_frame, values=["address wallet", "mongo_db"])
     option_combobox.pack()
-    option_combobox.current(0)  # Set default selection
+
 
     ttk.Label(registration_frame, text="Choose a user's name / wallet address:").pack()
     new_username_entry = ttk.Entry(registration_frame)
@@ -244,12 +248,7 @@ def setup_recommendation_frame(root):
     recommendation_frame = ttk.Frame(root, padding="10 10 10 10")
 
     # New fields
-    options = ["genre","language", "region", "sort_by", "certification_country", "certification", 
-               "certification.lte", "certification.gte", "include_adult", "page", 
-               "release_date.gte", "release_date.lte", "watch_region", "with_cast", 
-               "with_companies", "with_crew", "with_genres", "with_keywords", 
-               "with_people", "with_runtime.gte", "with_runtime.lte", "without_companies", 
-               "without_genres", "without_keywords", "year"]
+    options = ["with_genres","language", "sort_by", "year"]
 
     entries = {}
     for i, option in enumerate(options):  # start from the 1st row
