@@ -40,7 +40,7 @@ def register():
     
     else:
         messagebox.showerror("Error", "Failed to register user.")
-        return
+        
 
 def login():
 
@@ -49,13 +49,15 @@ def login():
     password = password_entry.get()
     selected_option = option_combobox_login.get()
     rc = user_object.login(username, password, selected_option)   
-
+    
     # Check if the username and password match
     if rc == USER_EXIST_AND_CORRECT_PASSWORD:
         messagebox.showinfo("Success", "Logged in successfully.")
         show_recommendation_frame()
+
     elif rc == USER_EXIST_AND_INCORRECT_PASSWORD:
         messagebox.showerror("Error", "Invalid username or password.")
+
     else:
         messagebox.showerror("Error", "User does not exist.")
 
